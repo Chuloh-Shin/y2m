@@ -99,11 +99,11 @@
   - `.env.local.example` — `GEMINI_API_KEY=<your-key>` 한 줄
   - `types/song.ts` — `Song` 타입 (이 시점에는 `title`, `artist`, `youtubeUrl`, `thumbnailUrl`)
 - **수용 기준**:
-  - [ ] 5개 취향 쿼리(예: "여성 20대 댄스곡", "출퇴근용 잔잔한 발라드" 등)에 대해 Gemini가 각 10곡의 `{title, artist}` 리스트를 반환한다
-  - [ ] 각 곡명+아티스트로 YouTube 검색한 상위 1개 결과의 `url`·`thumbnail`이 비어 있지 않은 값으로 추출된다
-  - [ ] 사람이 50건의 매칭 결과를 직접 URL로 확인하고 정확도(올바른 영상이 매칭된 비율)를 산출한다
-  - [ ] 환각 곡(존재하지 않는 곡명) 비율과 매칭 실패 사례가 `artifacts/mp3-curator/evidence/probe.md`에 기록된다
-  - [ ] 정확도가 ≥70%이면 Task 2로 진행. <70%이면 plan을 재조정(체크박스 기본값을 opt-in으로 두거나 곡 수를 의도적으로 더 많이 뽑는 등)
+  - [x] 5개 취향 쿼리(예: "여성 20대 댄스곡", "출퇴근용 잔잔한 발라드" 등)에 대해 Gemini가 각 10곡의 `{title, artist}` 리스트를 반환한다
+  - [x] 각 곡명+아티스트로 YouTube 검색한 상위 1개 결과의 `url`·`thumbnail`이 비어 있지 않은 값으로 추출된다
+  - [x] 사람이 50건의 매칭 결과를 직접 URL로 확인하고 정확도(올바른 영상이 매칭된 비율)를 산출한다 — **88% (44/50)**
+  - [x] 환각 곡(존재하지 않는 곡명) 비율과 매칭 실패 사례가 `artifacts/mp3-curator/evidence/probe.md`에 기록된다 — 환각 0건, 실패는 lofi 카테고리에 집중
+  - [x] 정확도가 ≥70%이면 Task 2로 진행. — **합격, Task 2 진행**
 - **검증**:
   - `bun run scripts/probe.ts` 실행 후 콘솔 출력 50줄
   - Human review — 리뷰어: 사용자 본인, 산출물: `artifacts/mp3-curator/evidence/probe.md`, 기준: 매칭 정확도 ≥ 70%
