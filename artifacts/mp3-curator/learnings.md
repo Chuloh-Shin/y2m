@@ -48,6 +48,22 @@ applied: discarded
 
 **다시 마주칠 가능성**: 낮음 — yt-dlp 외 subprocess wrapper를 또 작성하지 않으면 재발 X.
 
+**후속 결과**: 위 "절대경로 탐색"도 부족했음. 한 step 뒤 항목 참조.
+
+---
+category: tooling
+applied: not-yet
+---
+## Subprocess stdout 파싱 자체를 피하고 결과물 파일을 directory listing으로 찾기
+
+**상황**: 사용자가 BLACKPINK 곡 변환 시도 → `ENOENT: copyfile 'C:\Users\admin\AppData\Local\Temp\m'`로 실패. Windows + 한글 곡명 조합에서 yt-dlp stdout 인코딩이 깨져, 우리가 "절대 경로처럼 생긴" 잘린 문자열(`C:\...\Temp\m`)을 picked 해버린 게 원인. 직전 항목의 reviewer-suggested 강건화도 이 케이스를 못 막았음.
+
+**판단**: Stdout 파싱 자체를 버림. `convertToMp3`가 자기가 만든 jobDir을 알고 있으므로 `readdir(jobDir)`로 직접 `.mp3` 파일을 찾도록 변경. yt-dlp가 intermediate webm을 정리한 뒤라 폴더에 mp3 하나만 남고, 어떤 인코딩 환경에서도 결과가 같다. **이전 "discarded"로 분류한 학습을 뒤집어, 일반화 명시:**
+
+> **Subprocess의 결과물을 stdout 파싱으로 잡지 말고, 그 subprocess가 쓴 파일·디렉토리를 직접 listing하라.** stdout은 인코딩·로케일·버퍼링·언어 변화에 약한 채널이고, 결과물의 파일시스템 위치는 우리가 제어하는 input(인수로 넘긴 경로)에서 파생되므로 안전하다.
+
+**다시 마주칠 가능성**: 높음 — 외부 CLI(ffmpeg, pandoc, sox, sed/awk pipeline 결과물 등)를 subprocess로 부르는 모든 future feature에 적용 가능. compound 분석에서 rule 승격 후보로 강하게 추천.
+
 ---
 category: tooling
 applied: not-yet
