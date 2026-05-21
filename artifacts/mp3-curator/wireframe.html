@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe: mp3-curator</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root {
+    --w-bg: #f5f5f5;
+    --w-border: #ccc;
+    --w-text: #555;
+    --w-muted: #aaa;
+    --w-fill: #eee;
+  }
+
+  * {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    color: var(--w-text);
+  }
+
+  body { background: var(--w-bg); }
+
+  /* Screen nav */
+  nav { position: sticky; top: 0; z-index: 40; background: var(--w-bg); border-bottom: 1px solid var(--w-border); }
+  nav button { cursor: pointer; font-size: 13px; }
+  nav button:hover { background: var(--w-fill); border-radius: 4px; }
+  nav button.active { font-weight: bold; border-bottom: 2px solid var(--w-text); }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* Viewport toggle */
+  .vp-toggle button {
+    font-size: 12px; padding: 2px 8px;
+    border: 1px solid var(--w-border); cursor: pointer; background: white;
+  }
+  .vp-toggle button:first-child { border-radius: 4px 0 0 4px; }
+  .vp-toggle button:last-child { border-radius: 0 4px 4px 0; border-left: none; }
+  .vp-toggle button.active { background: var(--w-text); color: white; }
+
+  /* Mobile viewport frame */
+  body.viewport-mobile .screen-content {
+    max-width: 375px !important;
+    margin: 24px auto !important;
+    border: 2px solid var(--w-border);
+    border-radius: 24px;
+    min-height: 667px;
+    background: white;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    padding: 32px 16px !important;
+  }
+
+  /* Screen Notes */
+  .screen-notes {
+    background: #fffde7;
+    border-left: 3px solid #ffd54f;
+    padding: 12px 16px;
+    margin-top: 24px;
+    font-size: 13px;
+    border-radius: 0 4px 4px 0;
+  }
+  .screen-notes summary {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 12px;
+    color: #b0a050;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .screen-notes p { margin: 6px 0 2px; color: #777; }
+  .screen-notes ul { margin: 4px 0 0 16px; padding: 0; color: #777; }
+  .screen-notes li { margin: 2px 0; }
+
+  /* Custom utilities */
+  .w-card { border: 1px solid var(--w-border); background: white; border-radius: 6px; }
+  .w-input { border: 1px solid var(--w-border); background: var(--w-bg); border-radius: 4px; }
+  .w-input:focus { outline: 1px solid var(--w-text); }
+  .w-btn { border: 1px solid var(--w-border); background: white; border-radius: 4px; }
+  .w-btn:hover { background: var(--w-fill); }
+  .w-btn-primary { border: 1px solid var(--w-text); background: var(--w-text); color: white !important; border-radius: 4px; }
+  .w-btn-primary * { color: white !important; }
+  .w-section-label { color: var(--w-muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; font-weight: bold; }
+  .w-divider { background: var(--w-border); }
+  .w-thumb { background: var(--w-fill); border: 1px solid var(--w-border); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .w-checkbox { appearance: none; width: 16px; height: 16px; border: 1px solid var(--w-border); border-radius: 3px; background: white; cursor: pointer; flex-shrink: 0; position: relative; }
+  .w-checkbox:checked { background: var(--w-text); border-color: var(--w-text); }
+  .w-checkbox:checked::after { content: '✓'; color: white; position: absolute; left: 2px; top: -3px; font-size: 14px; }
+</style>
+</head>
+<body class="p-0 m-0 viewport-mobile">
+
+<nav class="flex items-center gap-4 px-6 py-2">
+  <span class="text-xs" style="color:var(--w-muted)">wireframe</span>
+  <button id="nav-0" onclick="show(0)" class="px-2 py-1">1. 입력</button>
+  <button id="nav-1" onclick="show(1)" class="px-2 py-1">2. 곡 목록</button>
+  <button id="nav-2" onclick="show(2)" class="px-2 py-1">3. 진행</button>
+  <button id="nav-3" onclick="show(3)" class="px-2 py-1">4. 곡 목록 (일부 제외)</button>
+  <button id="nav-4" onclick="show(4)" class="px-2 py-1">5. 진행 (URL 단일)</button>
+  <button id="nav-5" onclick="show(5)" class="px-2 py-1">6. 진행 (종결)</button>
+  <button id="nav-6" onclick="show(6)" class="px-2 py-1">7. 입력 (검증 에러)</button>
+  <button id="nav-7" onclick="show(7)" class="px-2 py-1">8. 입력 (LLM 실패)</button>
+  <div class="vp-toggle flex ml-auto">
+    <button id="vp-desktop" onclick="setViewport('desktop')">Desktop</button>
+    <button id="vp-mobile" onclick="setViewport('mobile')" class="active">Mobile</button>
+  </div>
+</nav>
+
+<!-- ===================== Screen 0: 입력 ===================== -->
+<div id="screen-0" class="screen" data-scenario="taste-mode-empty, url-mode-empty">
+  <div class="screen-content @container max-w-2xl mx-auto p-6">
+
+    <header class="mb-8">
+      <div class="flex items-center gap-2 mb-1">
+        <i data-lucide="music" class="w-5 h-5"></i>
+        <h1 class="text-xl font-bold">MP3 Curator</h1>
+      </div>
+      <p class="text-sm" style="color:var(--w-muted)">취향 한 줄로 듣고 싶은 곡들을 mp3로</p>
+    </header>
+
+    <!-- 취향 모드 -->
+    <section class="mb-6 p-5 w-card">
+      <div class="w-section-label mb-3">취향으로 받기</div>
+
+      <label class="block mb-4">
+        <span class="text-xs block mb-1">어떤 곡을 듣고 싶으세요?</span>
+        <input type="text"
+               placeholder="예: 여성 20대가 좋아하는 최신 댄스곡"
+               class="w-input w-full px-3 py-2 text-sm">
+      </label>
+
+      <div class="flex flex-col @md:flex-row gap-3 @md:items-end">
+        <label class="block">
+          <span class="text-xs block mb-1">곡 수 (1–50)</span>
+          <input type="number" value="10" min="1" max="50"
+                 class="w-input w-24 px-3 py-2 text-sm">
+        </label>
+        <button class="w-btn-primary @md:ml-auto px-4 py-2 text-sm flex items-center justify-center gap-2">
+          <i data-lucide="list-music" class="w-4 h-4"></i>
+          곡 목록 만들기
+        </button>
+      </div>
+    </section>
+
+    <!-- 구분선 -->
+    <div class="my-6 flex items-center gap-3">
+      <div class="h-px flex-1 w-divider"></div>
+      <span class="text-xs" style="color:var(--w-muted)">또는</span>
+      <div class="h-px flex-1 w-divider"></div>
+    </div>
+
+    <!-- URL 모드 -->
+    <section class="p-5 w-card">
+      <div class="w-section-label mb-3">URL로 받기</div>
+
+      <div class="flex flex-col @md:flex-row gap-3 @md:items-end">
+        <label class="block flex-1">
+          <span class="text-xs block mb-1">YouTube 영상 URL</span>
+          <input type="text"
+                 placeholder="https://www.youtube.com/watch?v=..."
+                 class="w-input w-full px-3 py-2 text-sm">
+        </label>
+        <button class="w-btn px-4 py-2 text-sm flex items-center justify-center gap-2">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          변환
+        </button>
+      </div>
+    </section>
+
+    <div class="screen-notes">
+      <details open>
+        <summary>Notes</summary>
+        <p>첫 진입 화면. 두 진입점(취향 / URL)이 한 화면에 공존한다.</p>
+        <ul>
+          <li>트리거: 앱 시작 · 새로고침 · 곡 목록 화면에서 "입력 수정" · 진행 화면에서 "새 입력으로"</li>
+          <li>인터랙션: "곡 목록 만들기" 클릭 → 곡 목록 확인 화면 / "변환" 클릭 → 진행 화면 (URL 단일 카드)</li>
+          <li>전환: 곡 목록 생성 성공 → screen-1 / URL 변환 시작 → screen-2</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Screen 1: 곡 목록 확인 ===================== -->
+<div id="screen-1" class="screen" data-scenario="list-confirm-5">
+  <div class="screen-content @container max-w-2xl mx-auto p-6">
+
+    <header class="mb-6">
+      <button class="text-xs flex items-center gap-1 mb-3" style="color:var(--w-muted)">
+        <i data-lucide="arrow-left" class="w-3 h-3"></i>
+        입력 수정
+      </button>
+      <h1 class="text-lg font-bold mb-1">곡 목록 확인</h1>
+      <p class="text-xs mb-1" style="color:var(--w-muted)">"여성 20대가 좋아하는 최신 댄스곡"</p>
+      <p class="text-xs" style="color:var(--w-muted)">
+        <span style="color:var(--w-text);">5곡 중 5곡 선택됨</span> · 썸네일·링크로 미리 들어보고 빼고 싶은 곡은 체크 해제
+      </p>
+    </header>
+
+    <ol class="space-y-2 mb-6">
+      <!-- item 1 -->
+      <li class="flex items-center gap-3 p-3 w-card">
+        <input type="checkbox" class="w-checkbox" checked>
+        <div class="w-thumb w-16 h-10 text-xs" style="color:var(--w-muted);">
+          <i data-lucide="image" class="w-4 h-4"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm truncate">Hype Boy</div>
+          <div class="text-xs truncate" style="color:var(--w-muted)">NewJeans</div>
+        </div>
+        <a href="#" class="text-xs flex items-center gap-1 px-2 py-1 w-btn whitespace-nowrap" target="_blank">
+          <i data-lucide="external-link" class="w-3 h-3"></i>
+          <span class="hidden @md:inline">미리 듣기</span>
+        </a>
+      </li>
+      <!-- item 2 -->
+      <li class="flex items-center gap-3 p-3 w-card">
+        <input type="checkbox" class="w-checkbox" checked>
+        <div class="w-thumb w-16 h-10 text-xs" style="color:var(--w-muted);">
+          <i data-lucide="image" class="w-4 h-4"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm truncate">Spicy</div>
+          <div class="text-xs truncate" style="color:var(--w-muted)">aespa</div>
+        </div>
+        <a href="#" class="text-xs flex items-center gap-1 px-2 py-1 w-btn whitespace-nowrap" target="_blank">
+          <i data-lucide="external-link" class="w-3 h-3"></i>
+          <span class="hidden @md:inline">미리 듣기</span>
+        </a>
+      </li>
+      <!-- item 3 -->
+      <li class="flex items-center gap-3 p-3 w-card">
+        <input type="checkbox" class="w-checkbox" checked>
+        <div class="w-thumb w-16 h-10 text-xs" style="color:var(--w-muted);">
+          <i data-lucide="image" class="w-4 h-4"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm truncate">Queencard</div>
+          <div class="text-xs truncate" style="color:var(--w-muted)">(G)I-DLE</div>
+        </div>
+        <a href="#" class="text-xs flex items-center gap-1 px-2 py-1 w-btn whitespace-nowrap" target="_blank">
+          <i data-lucide="external-link" class="w-3 h-3"></i>
+          <span class="hidden @md:inline">미리 듣기</span>
+        </a>
+      </li>
+      <!-- item 4 -->
+      <li class="flex items-center gap-3 p-3 w-card">
+        <input type="checkbox" class="w-checkbox" checked>
+        <div class="w-thumb w-16 h-10 text-xs" style="color:var(--w-muted);">
+          <i data-lucide="image" class="w-4 h-4"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm truncate">Super Shy</div>
+          <div class="text-xs truncate" style="color:var(--w-muted)">NewJeans</div>
+        </div>
+        <a href="#" class="text-xs flex items-center gap-1 px-2 py-1 w-btn whitespace-nowrap" target="_blank">
+          <i data-lucide="external-link" class="w-3 h-3"></i>
+          <span class="hidden @md:inline">미리 듣기</span>
+        </a>
+      </li>
+      <!-- item 5 -->
+      <li class="flex items-center gap-3 p-3 w-card">
+        <input type="checkbox" class="w-checkbox" checked>
+        <div class="w-thumb w-16 h-10 text-xs" style="color:var(--w-muted);">
+          <i data-lucide="image" class="w-4 h-4"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm truncate">Smart</div>
+          <div class="text-xs truncate" style="color:var(--w-muted)">LE SSERAFIM</div>
+        </div>
+        <a href="#" class="text-xs flex items-center gap-1 px-2 py-1 w-btn whitespace-nowrap" target="_blank">
+          <i data-lucide="external-link" class="w-3 h-3"></i>
+          <span class="hidden @md:inline">미리 듣기</span>
+        </a>
+      </li>
+    </ol>
+
+    <div class="flex flex-col @md:flex-row gap-2">
+      <button class="w-btn-primary px-4 py-2 text-sm flex items-center justify-center gap-2">
+        <i data-lucide="download" class="w-4 h-4"></i>
+        다운로드 시작 (5곡)
+      </button>
+      <button class="w-btn px-4 py-2 text-sm flex items-center justify-center gap-2">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        다시 생성
+      </button>
+      <button class="w-btn px-4 py-2 text-sm flex items-center justify-center gap-2">
+        <i data-lucide="pen-line" class="w-4 h-4"></i>
+        입력 수정
+      </button>
+    </div>
+
+    <div class="screen-notes">
+      <details open>
+        <summary>Notes</summary>
+        <p>LLM이 만든 N곡 목록을 사용자가 검토하는 단계. 각 항목의 썸네일·미리 듣기 링크로 매칭이 맞는지 확인하고, 빼고 싶은 곡은 체크 해제로 제외한다.</p>
+        <ul>
+          <li>트리거: 입력 화면에서 "곡 목록 만들기" 클릭 후 LLM 호출 성공</li>
+          <li>인터랙션: 체크박스 토글 (다운로드 대상에서 제외/포함) · "미리 듣기" 클릭 (새 탭에서 YouTube 영상) · "다운로드 시작" · "다시 생성" · "입력 수정"</li>
+          <li>전환: "다운로드 시작" → screen-2 (체크된 곡만) / "다시 생성" → 화면 유지, 목록만 갱신 / "입력 수정" → screen-0 (입력값 보존)</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Screen 2: 변환 진행 ===================== -->
+<div id="screen-2" class="screen" data-scenario="progress-mixed">
+  <div class="screen-content @container max-w-2xl mx-auto p-6">
+
+    <header class="mb-6">
+      <h1 class="text-lg font-bold mb-2">변환 진행</h1>
+      <div class="flex items-center gap-3">
+        <p class="text-xs whitespace-nowrap" style="color:var(--w-muted)">2 완료 · 1 실패 · 2 진행 중</p>
+        <div class="h-1 flex-1 rounded" style="background:var(--w-fill);">
+          <div class="h-1 rounded" style="background:var(--w-text); width:60%;"></div>
+        </div>
+      </div>
+    </header>
+
+    <ul class="space-y-2 mb-6">
+      <li class="flex items-center gap-3 p-3 w-card">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <div class="flex-1">
+          <div class="text-sm">Hype Boy</div>
+          <div class="text-xs" style="color:var(--w-muted)">NewJeans · 완료</div>
+        </div>
+      </li>
+      <li class="flex items-center gap-3 p-3 w-card">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <div class="flex-1">
+          <div class="text-sm">Spicy</div>
+          <div class="text-xs" style="color:var(--w-muted)">aespa · 완료</div>
+        </div>
+      </li>
+      <li class="flex items-center gap-3 p-3 w-card">
+        <i data-lucide="loader" class="w-4 h-4"></i>
+        <div class="flex-1">
+          <div class="text-sm">Queencard</div>
+          <div class="text-xs" style="color:var(--w-muted)">(G)I-DLE · 변환 중</div>
+        </div>
+      </li>
+      <li class="flex items-center gap-3 p-3 w-card">
+        <i data-lucide="search" class="w-4 h-4"></i>
+        <div class="flex-1">
+          <div class="text-sm">Super Shy</div>
+          <div class="text-xs" style="color:var(--w-muted)">NewJeans · 검색 중</div>
+        </div>
+      </li>
+      <li class="flex items-center gap-3 p-3 w-card">
+        <i data-lucide="x" class="w-4 h-4"></i>
+        <div class="flex-1">
+          <div class="text-sm">Smart</div>
+          <div class="text-xs" style="color:var(--w-muted)">LE SSERAFIM · 실패 — YouTube에서 못 찾음</div>
+        </div>
+      </li>
+    </ul>
+
+    <button class="w-btn px-4 py-2 text-sm flex items-center gap-2" disabled style="opacity:0.5;">
+      <i data-lucide="arrow-left" class="w-4 h-4"></i>
+      새 입력으로 (진행 중 비활성)
+    </button>
+
+    <div class="screen-notes">
+      <details open>
+        <summary>Notes</summary>
+        <p>곡별 진행 상태가 실시간 갱신된다. 모든 곡이 완료 또는 실패에 도달하면 종결.</p>
+        <ul>
+          <li>트리거: 곡 목록 확인 화면에서 "다운로드 시작" / URL 모드에서 "변환" (카드 1개 형태)</li>
+          <li>인터랙션: 진행 중에는 새 요청 차단. 모든 카드 종결 후 "새 입력으로" 활성화</li>
+          <li>전환: "새 입력으로" 클릭 → screen-0</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Screen 3: 곡 목록 — 일부 곡 체크 해제 (시나리오 1-a) ===================== -->
+<div id="screen-3" class="screen" data-scenario="list-partial-selection">
+  <div class="screen-content @container max-w-2xl mx-auto p-6">
+
+    <header class="mb-6">
+      <button class="text-xs flex items-center gap-1 mb-3" style="color:var(--w-muted)">
+        <i data-lucide="arrow-left" class="w-3 h-3"></i>
+        입력 수정
+      </button>
+      <h1 class="text-lg font-bold mb-1">곡 목록 확인</h1>
+      <p class="text-xs mb-1" style="color:var(--w-muted)">"여성 20대가 좋아하는 최신 댄스곡"</p>
+      <p class="text-xs" style="color:var(--w-muted)">
+        <span style="color:var(--w-text);">5곡 중 3곡 선택됨</span> · 썸네일·링크로 미리 들어보고 빼고 싶은 곡은 체크 해제
+      </p>
+    </header>
+
+    <ol class="space-y-2 mb-6">
+      <li class="flex items-center gap-3 p-3 w-card">
+        <input type="checkbox" class="w-checkbox" checked>
+        <div class="w-thumb w-16 h-10"><i data-lucide="image" class="w-4 h-4"></i></div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm truncate">Hype Boy</div>
+          <div class="text-xs truncate" style="color:var(--w-muted)">NewJeans</div>
+        </div>
+        <a href="#" class="text-xs flex items-center gap-1 px-2 py-1 w-btn whitespace-nowrap" target="_blank">
+          <i data-lucide="external-link" class="w-3 h-3"></i>
+          <span class="hidden @md:inline">미리 듣기</span>
+        </a>
+      </li>
+      <li class="flex items-center gap-3 p-3 w-card" style="opacity:0.5;">
+        <input type="checkbox" class="w-checkbox">
+        <div class="w-thumb w-16 h-10"><i data-lucide="image" class="w-4 h-4"></i></div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm truncate line-through">Spicy</div>
+          <div class="text-xs truncate" style="color:var(--w-muted)">aespa</div>
+        </div>
+        <a href="#" class="text-xs flex items-center gap-1 px-2 py-1 w-btn whitespace-nowrap" target="_blank">
+          <i data-lucide="external-link" class="w-3 h-3"></i>
+          <span class="hidden @md:inline">미리 듣기</span>
+        </a>
+      </li>
+      <li class="flex items-center gap-3 p-3 w-card">
+        <input type="checkbox" class="w-checkbox" checked>
+        <div class="w-thumb w-16 h-10"><i data-lucide="image" class="w-4 h-4"></i></div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm truncate">Queencard</div>
+          <div class="text-xs truncate" style="color:var(--w-muted)">(G)I-DLE</div>
+        </div>
+        <a href="#" class="text-xs flex items-center gap-1 px-2 py-1 w-btn whitespace-nowrap" target="_blank">
+          <i data-lucide="external-link" class="w-3 h-3"></i>
+          <span class="hidden @md:inline">미리 듣기</span>
+        </a>
+      </li>
+      <li class="flex items-center gap-3 p-3 w-card" style="opacity:0.5;">
+        <input type="checkbox" class="w-checkbox">
+        <div class="w-thumb w-16 h-10"><i data-lucide="image" class="w-4 h-4"></i></div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm truncate line-through">Super Shy</div>
+          <div class="text-xs truncate" style="color:var(--w-muted)">NewJeans</div>
+        </div>
+        <a href="#" class="text-xs flex items-center gap-1 px-2 py-1 w-btn whitespace-nowrap" target="_blank">
+          <i data-lucide="external-link" class="w-3 h-3"></i>
+          <span class="hidden @md:inline">미리 듣기</span>
+        </a>
+      </li>
+      <li class="flex items-center gap-3 p-3 w-card">
+        <input type="checkbox" class="w-checkbox" checked>
+        <div class="w-thumb w-16 h-10"><i data-lucide="image" class="w-4 h-4"></i></div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm truncate">Smart</div>
+          <div class="text-xs truncate" style="color:var(--w-muted)">LE SSERAFIM</div>
+        </div>
+        <a href="#" class="text-xs flex items-center gap-1 px-2 py-1 w-btn whitespace-nowrap" target="_blank">
+          <i data-lucide="external-link" class="w-3 h-3"></i>
+          <span class="hidden @md:inline">미리 듣기</span>
+        </a>
+      </li>
+    </ol>
+
+    <div class="flex flex-col @md:flex-row gap-2">
+      <button class="w-btn-primary px-4 py-2 text-sm flex items-center justify-center gap-2">
+        <i data-lucide="download" class="w-4 h-4"></i>
+        다운로드 시작 (3곡)
+      </button>
+      <button class="w-btn px-4 py-2 text-sm flex items-center justify-center gap-2">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        다시 생성
+      </button>
+      <button class="w-btn px-4 py-2 text-sm flex items-center justify-center gap-2">
+        <i data-lucide="pen-line" class="w-4 h-4"></i>
+        입력 수정
+      </button>
+    </div>
+
+    <div class="screen-notes">
+      <details open>
+        <summary>Notes</summary>
+        <p>사용자가 미리 듣기로 확인한 뒤 2곡을 체크 해제한 상태. 다운로드는 체크된 3곡만 진행된다.</p>
+        <ul>
+          <li>트리거: 곡 목록 확인 화면에서 체크박스 토글</li>
+          <li>인터랙션: 해제된 항목은 시각적으로 흐리게 + 곡명에 취소선. 헤더 카운트와 "다운로드 시작" 라벨이 실시간 갱신</li>
+          <li>전환: 모든 항목 체크 해제 시 "다운로드 시작" 비활성화</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Screen 4: 진행 — URL 단일 카드 (시나리오 2) ===================== -->
+<div id="screen-4" class="screen" data-scenario="progress-url-single">
+  <div class="screen-content @container max-w-2xl mx-auto p-6">
+
+    <header class="mb-6">
+      <h1 class="text-lg font-bold mb-2">변환 진행</h1>
+      <div class="flex items-center gap-3">
+        <p class="text-xs whitespace-nowrap" style="color:var(--w-muted)">URL 모드 · 1곡</p>
+        <div class="h-1 flex-1 rounded" style="background:var(--w-fill);">
+          <div class="h-1 rounded" style="background:var(--w-text); width:50%;"></div>
+        </div>
+      </div>
+    </header>
+
+    <ul class="space-y-2 mb-6">
+      <li class="flex items-center gap-3 p-3 w-card">
+        <i data-lucide="loader" class="w-4 h-4"></i>
+        <div class="flex-1">
+          <div class="text-sm">youtube.com/watch?v=...</div>
+          <div class="text-xs" style="color:var(--w-muted)">다운로드 중</div>
+        </div>
+      </li>
+    </ul>
+
+    <button class="w-btn px-4 py-2 text-sm flex items-center gap-2" disabled style="opacity:0.5;">
+      <i data-lucide="arrow-left" class="w-4 h-4"></i>
+      새 입력으로 (진행 중 비활성)
+    </button>
+
+    <div class="screen-notes">
+      <details open>
+        <summary>Notes</summary>
+        <p>URL 모드에서 진입한 진행 화면. 카드 1개만 표시되고, 곡 목록 확인 단계를 거치지 않는다.</p>
+        <ul>
+          <li>트리거: 입력 화면 URL 모드에서 "변환" 클릭</li>
+          <li>인터랙션: 카드의 라벨은 URL 또는 yt-dlp가 추출한 영상 제목으로 표시</li>
+          <li>전환: 완료/실패 종결 후 "새 입력으로" 활성</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Screen 5: 진행 — 모두 종결 (시나리오 5 끝 상태) ===================== -->
+<div id="screen-5" class="screen" data-scenario="progress-terminated">
+  <div class="screen-content @container max-w-2xl mx-auto p-6">
+
+    <header class="mb-6">
+      <h1 class="text-lg font-bold mb-2">변환 완료</h1>
+      <div class="flex items-center gap-3">
+        <p class="text-xs whitespace-nowrap" style="color:var(--w-muted)">4 완료 · 1 실패</p>
+        <div class="h-1 flex-1 rounded" style="background:var(--w-fill);">
+          <div class="h-1 rounded" style="background:var(--w-text); width:100%;"></div>
+        </div>
+      </div>
+    </header>
+
+    <ul class="space-y-2 mb-6">
+      <li class="flex items-center gap-3 p-3 w-card">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <div class="flex-1">
+          <div class="text-sm">Hype Boy</div>
+          <div class="text-xs" style="color:var(--w-muted)">NewJeans · 완료</div>
+        </div>
+      </li>
+      <li class="flex items-center gap-3 p-3 w-card">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <div class="flex-1">
+          <div class="text-sm">Spicy</div>
+          <div class="text-xs" style="color:var(--w-muted)">aespa · 완료</div>
+        </div>
+      </li>
+      <li class="flex items-center gap-3 p-3 w-card">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <div class="flex-1">
+          <div class="text-sm">Queencard</div>
+          <div class="text-xs" style="color:var(--w-muted)">(G)I-DLE · 완료</div>
+        </div>
+      </li>
+      <li class="flex items-center gap-3 p-3 w-card">
+        <i data-lucide="check" class="w-4 h-4"></i>
+        <div class="flex-1">
+          <div class="text-sm">Super Shy</div>
+          <div class="text-xs" style="color:var(--w-muted)">NewJeans · 완료</div>
+        </div>
+      </li>
+      <li class="flex items-center gap-3 p-3 w-card">
+        <i data-lucide="x" class="w-4 h-4"></i>
+        <div class="flex-1">
+          <div class="text-sm">Smart</div>
+          <div class="text-xs" style="color:var(--w-muted)">LE SSERAFIM · 실패 — YouTube에서 못 찾음</div>
+        </div>
+      </li>
+    </ul>
+
+    <button class="w-btn-primary px-4 py-2 text-sm flex items-center gap-2">
+      <i data-lucide="arrow-left" class="w-4 h-4"></i>
+      새 입력으로
+    </button>
+
+    <div class="screen-notes">
+      <details open>
+        <summary>Notes</summary>
+        <p>모든 곡이 완료 또는 실패에 도달한 종결 상태. 부분 실패가 발생해도 전체 흐름이 자연스럽게 마무리된다.</p>
+        <ul>
+          <li>트리거: 모든 곡의 상태가 완료 또는 실패가 될 때</li>
+          <li>인터랙션: "새 입력으로" 활성. 실패 카드의 사유는 그대로 남아 사용자가 확인 가능</li>
+          <li>전환: "새 입력으로" 클릭 → screen-0 (입력 초기 상태)</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Screen 6: 입력 — 검증 에러 (시나리오 6) ===================== -->
+<div id="screen-6" class="screen" data-scenario="input-validation-error">
+  <div class="screen-content @container max-w-2xl mx-auto p-6">
+
+    <header class="mb-8">
+      <div class="flex items-center gap-2 mb-1">
+        <i data-lucide="music" class="w-5 h-5"></i>
+        <h1 class="text-xl font-bold">MP3 Curator</h1>
+      </div>
+      <p class="text-sm" style="color:var(--w-muted)">취향 한 줄로 듣고 싶은 곡들을 mp3로</p>
+    </header>
+
+    <section class="mb-6 p-5 w-card">
+      <div class="w-section-label mb-3">취향으로 받기</div>
+
+      <label class="block mb-4">
+        <span class="text-xs block mb-1">어떤 곡을 듣고 싶으세요?</span>
+        <input type="text" value=""
+               placeholder="예: 여성 20대가 좋아하는 최신 댄스곡"
+               class="w-input w-full px-3 py-2 text-sm">
+        <span class="text-xs block mt-1 flex items-center gap-1" style="color:var(--w-text);">
+          <i data-lucide="alert-circle" class="w-3 h-3"></i>
+          취향을 입력해주세요
+        </span>
+      </label>
+
+      <div class="flex flex-col @md:flex-row gap-3 @md:items-end">
+        <label class="block">
+          <span class="text-xs block mb-1">곡 수 (1–50)</span>
+          <input type="number" value="50" min="1" max="50"
+                 class="w-input w-24 px-3 py-2 text-sm">
+        </label>
+        <button class="w-btn @md:ml-auto px-4 py-2 text-sm flex items-center justify-center gap-2" disabled style="opacity:0.4; cursor:not-allowed;">
+          <i data-lucide="list-music" class="w-4 h-4"></i>
+          곡 목록 만들기
+        </button>
+      </div>
+    </section>
+
+    <div class="screen-notes">
+      <details open>
+        <summary>Notes</summary>
+        <p>입력 검증 실패 상태. 취향 비어 있음 → 안내 텍스트 + "곡 목록 만들기" 비활성. 곡 수는 범위 안으로 자동 제한되어 50으로 클램프됨(예: 사용자가 51 입력 시).</p>
+        <ul>
+          <li>트리거: 사용자가 취향을 비운 채 제출 시도 / 곡 수에 0·51 입력</li>
+          <li>인터랙션: 취향 입력 시작하면 안내 텍스트 사라지고 버튼 활성화. 곡 수는 1–50 범위 안에서만 변경 가능</li>
+          <li>전환: 입력 충족 → screen-1로 진행</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== Screen 7: 입력 — LLM 실패 (시나리오 7) ===================== -->
+<div id="screen-7" class="screen" data-scenario="input-llm-error">
+  <div class="screen-content @container max-w-2xl mx-auto p-6">
+
+    <header class="mb-8">
+      <div class="flex items-center gap-2 mb-1">
+        <i data-lucide="music" class="w-5 h-5"></i>
+        <h1 class="text-xl font-bold">MP3 Curator</h1>
+      </div>
+      <p class="text-sm" style="color:var(--w-muted)">취향 한 줄로 듣고 싶은 곡들을 mp3로</p>
+    </header>
+
+    <!-- 에러 박스 -->
+    <div class="mb-4 p-4 flex items-start gap-3 w-card" style="border-style: dashed;">
+      <i data-lucide="alert-triangle" class="w-4 h-4 mt-0.5"></i>
+      <div class="flex-1">
+        <div class="text-sm font-bold mb-1">곡 목록을 만들 수 없습니다</div>
+        <div class="text-xs" style="color:var(--w-muted)">LLM 호출이 실패했습니다. 잠시 후 다시 시도해주세요.</div>
+      </div>
+      <button class="text-xs" style="color:var(--w-muted)">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <section class="mb-6 p-5 w-card">
+      <div class="w-section-label mb-3">취향으로 받기</div>
+
+      <label class="block mb-4">
+        <span class="text-xs block mb-1">어떤 곡을 듣고 싶으세요?</span>
+        <input type="text" value="여성 20대가 좋아하는 최신 댄스곡"
+               class="w-input w-full px-3 py-2 text-sm">
+      </label>
+
+      <div class="flex flex-col @md:flex-row gap-3 @md:items-end">
+        <label class="block">
+          <span class="text-xs block mb-1">곡 수 (1–50)</span>
+          <input type="number" value="5" min="1" max="50"
+                 class="w-input w-24 px-3 py-2 text-sm">
+        </label>
+        <button class="w-btn-primary @md:ml-auto px-4 py-2 text-sm flex items-center justify-center gap-2">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          다시 시도
+        </button>
+      </div>
+    </section>
+
+    <div class="screen-notes">
+      <details open>
+        <summary>Notes</summary>
+        <p>LLM 호출 실패 후 입력 화면을 유지하는 상태. 사용자의 입력값이 보존되어 다시 시도하기 쉽다.</p>
+        <ul>
+          <li>트리거: "곡 목록 만들기" 클릭 → LLM API 응답 실패</li>
+          <li>인터랙션: 에러 박스를 닫거나, 같은 입력으로 "다시 시도" 클릭</li>
+          <li>전환: "다시 시도" 성공 → screen-1 / 실패 시 동일 에러 박스 유지</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</div>
+
+<script>
+var currentScreen = 0;
+var screenIds = [];
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById('screen-' + id).classList.add('active');
+  document.querySelectorAll('nav button[id^="nav-"]').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('nav-' + id).classList.add('active');
+  currentScreen = screenIds.indexOf(id);
+}
+
+function setViewport(mode) {
+  document.body.classList.remove('viewport-mobile', 'viewport-desktop');
+  document.body.classList.add('viewport-' + mode);
+  document.querySelectorAll('.vp-toggle button').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('vp-' + mode).classList.add('active');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('nav button[id^="nav-"]').forEach(function(b) {
+    screenIds.push(parseInt(b.id.replace('nav-', '')));
+  });
+  var first = document.querySelector('nav button[id^="nav-"]');
+  if (first) first.click();
+  lucide.createIcons();
+});
+</script>
+</body>
+</html>
