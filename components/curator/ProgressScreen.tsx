@@ -34,7 +34,7 @@ export function ProgressScreen({ job, onReset }: Props) {
         </div>
         {terminated && completed > 0 && (
           <p className="text-xs text-muted-foreground">
-            mp3 파일은 사용자 폴더의 Downloads에 저장되었습니다.
+            mp3 파일은 브라우저의 기본 다운로드 폴더에 저장되었습니다.
           </p>
         )}
       </header>

@@ -35,13 +35,19 @@ bun install
 
 ### 3. `.env.local`
 
-프로젝트 루트에 `.env.local`:
+`.env.example`을 `.env.local`로 복사한 뒤 값을 채웁니다:
 
-```env
-GEMINI_API_KEY=<발급받은 키>
+```bash
+cp .env.example .env.local
 ```
 
-**Windows에만** 추가로 두 줄 더:
+필수:
+- `GEMINI_API_KEY` — 발급받은 키
+
+선택:
+- `MP3_NORMALIZE_LUFS` — 다운로드 mp3의 통합 라우드니스 타겟 (기본 `-14`, Spotify·YouTube 수준). 비우면 정규화 스킵.
+
+**Windows에만** 추가:
 
 ```env
 YT_DLP_PATH=C:/Users/<your-username>/AppData/Local/Microsoft/WinGet/Links/yt-dlp.exe
@@ -65,7 +71,7 @@ bun run dev
 
 http://localhost:3000
 
-mp3는 **브라우저의 기본 다운로드 폴더**에 자동 저장됩니다.
+mp3는 **브라우저의 기본 다운로드 폴더**에 자동 저장됩니다. ffmpeg loudnorm으로 곡 간 볼륨이 일정하게 정규화된 상태로 떨어집니다 (`MP3_NORMALIZE_LUFS`로 타겟 조정).
 
 ---
 

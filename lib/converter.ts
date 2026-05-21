@@ -17,6 +17,19 @@ export type ConvertResult = {
 };
 
 /**
+ * Reads MP3_NORMALIZE_LUFS from env. Returns null if unset or out of the
+ * loudnorm filter's accepted range (I=-70..-5), so callers can skip
+ * normalization without throwing on misconfiguration.
+ */
+function parseLufsTarget(): number | null {
+  const raw = process.env.MP3_NORMALIZE_LUFS;
+  if (!raw) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < -70 || n > -5) return null;
+  return n;
+}
+
+/**
  * Downloads a YouTube URL as an mp3 file. yt-dlp handles both download
  * and the ffmpeg-backed audio extraction in a single call when given
  * `-x --audio-format mp3` (yt-dlp invokes ffmpeg internally).
@@ -89,12 +102,59 @@ export async function convertToMp3(
           reject(new Error(`no mp3 produced (jobDir entries: ${entries.join(", ")})`));
           return;
         }
-        const filePath = path.join(jobDir, mp3);
-        onProgress?.({ phase: "done", filePath, fileName: mp3 });
-        resolve({ filePath, fileName: mp3 });
+        const rawPath = path.join(jobDir, mp3);
+
+        const lufs = parseLufsTarget();
+        let finalPath = rawPath;
+        if (lufs !== null) {
+          if (!sawConverting) onProgress?.({ phase: "converting" });
+          const normalizedPath = path.join(jobDir, `normalized-${mp3}`);
+          await runLoudnorm(rawPath, normalizedPath, lufs);
+          finalPath = normalizedPath;
+        }
+
+        onProgress?.({ phase: "done", filePath: finalPath, fileName: mp3 });
+        resolve({ filePath: finalPath, fileName: mp3 });
       } catch (err) {
         reject(err);
       }
+    });
+  });
+}
+
+/**
+ * Runs ffmpeg's EBU R128 loudnorm filter to retarget integrated loudness.
+ * Single-pass is enough for our use case — two-pass is more accurate but
+ * doubles the wall-clock time per file.
+ */
+function runLoudnorm(input: string, output: string, targetLufs: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const args = [
+      "-y",
+      "-i",
+      input,
+      "-af",
+      `loudnorm=I=${targetLufs}:TP=-2:LRA=11`,
+      "-c:a",
+      "libmp3lame",
+      "-q:a",
+      "0",
+      output,
+    ];
+    const child = spawn(FFMPEG, args, { windowsHide: true });
+    let stderr = "";
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", (err) => {
+      reject(new Error(`Failed to spawn ffmpeg: ${err.message}`));
+    });
+    child.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(`ffmpeg loudnorm exited ${code}: ${stderr.slice(-500)}`));
+        return;
+      }
+      resolve();
     });
   });
 }
