@@ -2,21 +2,33 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { getJobStatus, startUrlConversion } from "@/app/actions";
+import { generateSongList, getJobStatus, startUrlConversion } from "@/app/actions";
 import { InputScreen } from "@/components/curator/InputScreen";
+import { ListConfirmScreen } from "@/components/curator/ListConfirmScreen";
 import { ProgressScreen } from "@/components/curator/ProgressScreen";
-import type { JobStatus } from "@/types/song";
+import type { JobStatus, Song } from "@/types/song";
 
-type Mode = { kind: "input" } | { kind: "progress"; jobId: string };
+type Mode = { kind: "input" } | { kind: "list" } | { kind: "progress"; jobId: string };
 
 const POLL_INTERVAL_MS = 1000;
+const DEFAULT_COUNT = 10;
 
 export function CuratorApp() {
   const [mode, setMode] = useState<Mode>({ kind: "input" });
+
+  // Taste-mode input state, preserved across "입력 수정".
+  const [query, setQuery] = useState("");
+  const [count, setCount] = useState(DEFAULT_COUNT);
+
+  // List-mode state.
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [generating, setGenerating] = useState(false);
+  const [listError, setListError] = useState<string | undefined>(undefined);
+
+  // Progress-mode state.
   const [job, setJob] = useState<JobStatus | null>(null);
   const downloadedRef = useRef<Set<string>>(new Set());
 
-  // Poll job status while in progress mode.
   useEffect(() => {
     if (mode.kind !== "progress") {
       setJob(null);
@@ -31,7 +43,6 @@ export function CuratorApp() {
       if (cancelled || !status) return;
       setJob(status);
 
-      // Trigger browser downloads for newly-done items.
       status.items.forEach((item, i) => {
         if (item.status !== "done") return;
         const key = `${jobId}:${i}`;
@@ -54,6 +65,30 @@ export function CuratorApp() {
     };
   }, [mode]);
 
+  const handleGenerateList = useCallback(async () => {
+    setGenerating(true);
+    setListError(undefined);
+    try {
+      const result = await generateSongList(query, count);
+      if (!result.ok) {
+        setListError(
+          result.reason === "llm-failed"
+            ? "LLM 호출이 실패했습니다. 잠시 후 다시 시도해주세요."
+            : "취향을 입력해주세요.",
+        );
+        return;
+      }
+      if (result.songs.length === 0) {
+        setListError("매칭되는 영상을 찾지 못했습니다. 취향을 더 구체적으로 적어보세요.");
+        return;
+      }
+      setSongs(result.songs);
+      setMode({ kind: "list" });
+    } finally {
+      setGenerating(false);
+    }
+  }, [query, count]);
+
   const handleSubmitUrl = useCallback(async (url: string) => {
     const result = await startUrlConversion(url);
     if (!result.ok) {
@@ -67,12 +102,48 @@ export function CuratorApp() {
     setMode({ kind: "progress", jobId: result.jobId });
   }, []);
 
+  const handleEditInput = useCallback(() => {
+    setMode({ kind: "input" });
+    setListError(undefined);
+  }, []);
+
+  const handleStartDownload = useCallback((_selected: Song[]) => {
+    // Task 4 wires this up to a playlist server action.
+    toast("Task 4에서 일괄 다운로드를 연결합니다.");
+  }, []);
+
   const handleReset = useCallback(() => {
     setMode({ kind: "input" });
   }, []);
 
+  if (mode.kind === "list") {
+    return (
+      <ListConfirmScreen
+        query={query}
+        songs={songs}
+        regenerating={generating}
+        onStartDownload={handleStartDownload}
+        onRegenerate={handleGenerateList}
+        onEditInput={handleEditInput}
+      />
+    );
+  }
+
   if (mode.kind === "progress" && job) {
     return <ProgressScreen job={job} onReset={handleReset} />;
   }
-  return <InputScreen onSubmitUrl={handleSubmitUrl} disabled={false} />;
+
+  return (
+    <InputScreen
+      query={query}
+      count={count}
+      onQueryChange={setQuery}
+      onCountChange={setCount}
+      onGenerateList={handleGenerateList}
+      onSubmitUrl={handleSubmitUrl}
+      disabled={false}
+      generating={generating}
+      errorMessage={listError}
+    />
+  );
 }

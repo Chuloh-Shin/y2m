@@ -8,7 +8,9 @@ import {
   setItemStatus,
   updateItem,
 } from "@/lib/jobs";
-import type { JobStatus, SongJobItem } from "@/types/song";
+import { generateSongList as generateSongListFromLlm } from "@/lib/llm";
+import { searchTopMatch } from "@/lib/youtube";
+import type { JobStatus, Song, SongJobItem } from "@/types/song";
 
 export type StartJobResult =
   | { ok: true; jobId: string }
@@ -61,4 +63,38 @@ async function runUrlConversion(jobId: string, url: string) {
 
 export async function getJobStatus(jobId: string): Promise<JobStatus | null> {
   return getJobStatusFromStore(jobId);
+}
+
+export type GenerateSongListResult =
+  | { ok: true; songs: Song[] }
+  | { ok: false; reason: "llm-failed" | "invalid-input" };
+
+export async function generateSongList(
+  query: string,
+  count: number,
+): Promise<GenerateSongListResult> {
+  const trimmed = query.trim();
+  if (!trimmed) return { ok: false, reason: "invalid-input" };
+  const n = Math.max(1, Math.min(50, Math.floor(count)));
+
+  try {
+    const seeds = await generateSongListFromLlm(trimmed, n);
+    const songs: Song[] = await Promise.all(
+      seeds.map(async (seed) => {
+        const match = await searchTopMatch(`${seed.artist} ${seed.title}`).catch(
+          () => null,
+        );
+        return {
+          title: seed.title,
+          artist: seed.artist,
+          youtubeUrl: match?.url ?? "",
+          thumbnailUrl: match?.thumbnailUrl ?? "",
+        };
+      }),
+    );
+    // Drop entries that have no usable YouTube URL — they cannot be converted.
+    return { ok: true, songs: songs.filter((s) => s.youtubeUrl) };
+  } catch {
+    return { ok: false, reason: "llm-failed" };
+  }
 }
