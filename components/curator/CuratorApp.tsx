@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   generateSongList,
@@ -34,9 +34,12 @@ export function CuratorApp() {
   // Progress-mode state.
   const [job, setJob] = useState<JobStatus | null>(null);
 
+  const triggeredDownloads = useRef<Set<number>>(new Set());
+
   useEffect(() => {
     if (mode.kind !== "progress") {
       setJob(null);
+      triggeredDownloads.current = new Set();
       return;
     }
     const jobId = mode.jobId;
@@ -46,6 +49,17 @@ export function CuratorApp() {
       const status = await getJobStatus(jobId);
       if (cancelled || !status) return;
       setJob(status);
+      status.items.forEach((item, i) => {
+        if (item.status === "done" && !triggeredDownloads.current.has(i)) {
+          triggeredDownloads.current.add(i);
+          const a = document.createElement("a");
+          a.href = `/api/download/${jobId}/${i}`;
+          a.download = item.downloadName ?? "";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        }
+      });
     }
 
     void tick();

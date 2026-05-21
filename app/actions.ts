@@ -1,8 +1,5 @@
 "use server";
 
-import { copyFile, mkdir } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
 import { convertToMp3 } from "@/lib/converter";
 import {
   createJob,
@@ -14,14 +11,6 @@ import {
 import { generateSongList as generateSongListFromLlm } from "@/lib/llm";
 import { searchTopMatch } from "@/lib/youtube";
 import type { JobStatus, Song, SongJobItem } from "@/types/song";
-
-async function copyToDownloads(srcPath: string, fileName: string): Promise<string> {
-  const dir = path.join(os.homedir(), "Downloads");
-  await mkdir(dir, { recursive: true });
-  const dest = path.join(dir, fileName);
-  await copyFile(srcPath, dest);
-  return dest;
-}
 
 export type StartJobResult =
   | { ok: true; jobId: string }
@@ -59,12 +48,11 @@ async function runUrlConversion(jobId: string, url: string) {
         setItemStatus(jobId, 0, "converting");
       }
     });
-    const finalPath = await copyToDownloads(result.filePath, result.fileName);
     updateItem(jobId, 0, {
       status: "done",
       title: result.fileName.replace(/\.mp3$/i, ""),
       downloadName: result.fileName,
-      filePath: finalPath,
+      filePath: result.filePath,
     });
   } catch (err) {
     setItemStatus(jobId, 0, "failed", {
@@ -118,11 +106,10 @@ async function runPlaylistConversion(jobId: string) {
           setItemStatus(jobId, i, "converting");
         }
       });
-      const finalPath = await copyToDownloads(result.filePath, result.fileName);
       updateItem(jobId, i, {
         status: "done",
         downloadName: result.fileName,
-        filePath: finalPath,
+        filePath: result.filePath,
       });
     } catch (err) {
       setItemStatus(jobId, i, "failed", {
