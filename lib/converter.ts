@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readdir } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 
@@ -41,8 +41,6 @@ export async function convertToMp3(
       FFMPEG,
       "-o",
       outTemplate,
-      "--print",
-      "after_move:filepath",
       url,
     ];
 
@@ -75,24 +73,28 @@ export async function convertToMp3(
       reject(new Error(`Failed to spawn yt-dlp: ${err.message}`));
     });
 
-    child.on("close", (code) => {
+    child.on("close", async (code) => {
       if (code !== 0) {
         reject(new Error(`yt-dlp exited ${code}: ${stderr || printed}`));
         return;
       }
-      const lines = printed.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-      // --print after_move:filepath emits exactly one absolute path. Find the
-      // last absolute path in stdout to be robust against extra yt-dlp output.
-      const filePath = [...lines]
-        .reverse()
-        .find((l) => path.isAbsolute(l));
-      if (!filePath) {
-        reject(new Error("yt-dlp did not print an output filepath"));
-        return;
+      try {
+        // Discover the produced mp3 by reading our dedicated job dir, which
+        // sidesteps any stdout-encoding issues with non-ASCII titles on
+        // Windows. yt-dlp deletes the intermediate webm so only the mp3
+        // remains here.
+        const entries = await readdir(jobDir);
+        const mp3 = entries.find((e) => e.toLowerCase().endsWith(".mp3"));
+        if (!mp3) {
+          reject(new Error(`no mp3 produced (jobDir entries: ${entries.join(", ")})`));
+          return;
+        }
+        const filePath = path.join(jobDir, mp3);
+        onProgress?.({ phase: "done", filePath, fileName: mp3 });
+        resolve({ filePath, fileName: mp3 });
+      } catch (err) {
+        reject(err);
       }
-      const fileName = path.basename(filePath);
-      onProgress?.({ phase: "done", filePath, fileName });
-      resolve({ filePath, fileName });
     });
   });
 }
