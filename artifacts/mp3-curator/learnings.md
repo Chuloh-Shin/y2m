@@ -1,6 +1,54 @@
 # mp3-curator learnings
 
 ---
+category: code-review
+applied: rule
+---
+## "다시 생성" 후 자식 state가 새 props에 동기화되지 않음
+
+**상황**: code-reviewer가 짚음. `ListConfirmScreen`이 `checkedMask.length !== songs.length`로만 리셋 판정 → 같은 N으로 재생성 시 이전 unchecked 인덱스가 새 곡에 그대로 매핑되는 spec 위반 버그. 테스트는 onRegenerate 콜백만 확인했고 props 교체 후 state 검증이 없어서 가려져 있었음.
+
+**판단**: songs prop의 **identity**(reference)를 별도 state로 추적해 새 reference면 mask 리셋. render-phase setState로 React 18 안전 패턴 적용. 회귀 방지 테스트로 "songs prop 교체 후 모두 다시 체크됨" 케이스 추가.
+
+**다시 마주칠 가능성**: 높음 — "같은 모양의 새 데이터로 자식 컴포넌트 reset" 패턴은 future feature에서 흔히 마주침. **rule로 즉시 승격** → `.claude/rules/derived-state-reset.md`로 패턴 명문화 고려.
+
+---
+category: code-review
+applied: not-yet
+---
+## Dev 서버 종료 시 in-memory store의 stale active job lock
+
+**상황**: code-reviewer가 짚음. `globalThis`로 pin한 jobs store가 HMR을 살아남는 건 의도대로지만, dev 서버 Ctrl+C로 변환 도중 종료 시 non-terminal items가 남아 다음 시작 때 `hasActiveJob() === true`로 영구 lock. 사용자가 어떤 제출도 못 함.
+
+**판단**: 모듈 첫 로드 시 활성 job의 non-terminal items를 `failed`(사유: "서버 재시작으로 변환이 중단됨")로 sweep + activeJobId 해제. 모듈 import 시 한 번만 실행되므로 cost 없음.
+
+**다시 마주칠 가능성**: 중간 — in-memory store + long-running 작업 조합이 다른 feature에서도 발생 가능. 일반화는 약함 (store 종류마다 cleanup 로직이 다름).
+
+---
+category: code-review
+applied: not-yet
+---
+## `Promise` 기반 fire-and-forget의 클라이언트 UX 깜빡임
+
+**상황**: code-reviewer가 짚음. `setMode({kind:"progress",...})` 직후 첫 `getJobStatus` 응답 전까지 `mode.kind === "progress" && job` 조건이 false라 InputScreen이 다시 렌더됨. 빠른 사용자가 버튼을 두 번 누를 수 있는 UX 깜빡임 (서버측 가드는 있음).
+
+**판단**: 명시적 "시작 중…" loading 상태를 분리. mode가 progress인데 job이 null인 경우의 별도 컴포넌트.
+
+**다시 마주칠 가능성**: 높음 — 모든 state machine + async first-fetch 조합에서 동일 패턴. 가이드라인: "비동기 데이터 의존 상태 전환은 'loading' 단계를 명시적으로 두자."
+
+---
+category: code-review
+applied: discarded
+---
+## stdout 마지막 줄 의존을 절대경로 탐색으로 강건화
+
+**상황**: code-reviewer가 짚음. `lib/converter.ts`가 yt-dlp의 `--print after_move:filepath` stdout의 마지막 줄을 filepath로 가정. 추가 출력이나 곡명에 개행이 들어가는 예외 케이스에서 깨질 가능성.
+
+**판단**: 마지막 줄 대신 stdout 라인 중 절대경로처럼 생긴 것 중 가장 나중 줄을 골라 강건성 ↑. 일반화하면 "subprocess 출력 파싱은 위치가 아닌 형식으로 골라낸다"로 묶일 수 있으나, 현재 한 케이스로 rule 승격은 약함. 일회성 강건화로 분류.
+
+**다시 마주칠 가능성**: 낮음 — yt-dlp 외 subprocess wrapper를 또 작성하지 않으면 재발 X.
+
+---
 category: tooling
 applied: not-yet
 ---

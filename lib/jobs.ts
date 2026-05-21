@@ -10,6 +10,21 @@ const store: Store = globalForJobs.__mp3JobsStore ?? { jobs: new Map(), activeJo
 globalForJobs.__mp3JobsStore = store;
 const jobs = store.jobs;
 
+// If dev server was killed mid-conversion, in-flight items stay non-terminal
+// on next start and block all future submissions. Sweep them on module load.
+if (store.activeJobId) {
+  const active = jobs.get(store.activeJobId);
+  if (active) {
+    for (const item of active.items) {
+      if (!isTerminal(item.status)) {
+        item.status = "failed";
+        item.failureReason = "서버 재시작으로 변환이 중단됨";
+      }
+    }
+  }
+  store.activeJobId = null;
+}
+
 function newId(): string {
   return `job_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }

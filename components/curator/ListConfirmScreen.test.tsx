@@ -4,6 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 import { ListConfirmScreen } from "./ListConfirmScreen";
 import type { Song } from "@/types/song";
 
+function ControlledList(initial: { songs: Song[] }) {
+  // Helper to drive a parent-controlled prop change for regenerate testing.
+  return initial;
+}
+void ControlledList;
+
 function makeSongs(n: number): Song[] {
   return Array.from({ length: n }, (_, i) => ({
     title: `Song ${i + 1}`,
@@ -18,6 +24,7 @@ function renderList(over: Over = {}) {
   const props: React.ComponentProps<typeof ListConfirmScreen> = {
     query: "댄스곡",
     songs: makeSongs(5),
+    requested: 5,
     regenerating: false,
     onStartDownload: vi.fn(),
     onRegenerate: vi.fn().mockResolvedValue(undefined),
@@ -126,5 +133,46 @@ describe("ListConfirmScreen", () => {
     expect(screen.getByRole("button", { name: /다시 생성/ })).toBeDisabled();
     const editTriggers = screen.getAllByRole("button", { name: /입력 수정/ });
     expect(editTriggers[1]).toBeDisabled();
+  });
+
+  it("resets check mask to all-checked when a new songs prop is passed (regenerate)", async () => {
+    const user = userEvent.setup();
+    const initial = makeSongs(5);
+    const { rerender } = renderList({ songs: initial });
+
+    // Uncheck #2 and #4.
+    const items = screen.getAllByTestId("song-list-item");
+    await user.click(within(items[1]).getByRole("checkbox"));
+    await user.click(within(items[3]).getByRole("checkbox"));
+    expect(screen.getByText(/5곡 중 3곡 선택됨/)).toBeInTheDocument();
+
+    // Simulate "다시 생성" by passing a new (distinct) songs reference.
+    const fresh = makeSongs(5).map((s, i) => ({ ...s, title: `New ${i + 1}` }));
+    rerender(
+      <ListConfirmScreen
+        query="댄스곡"
+        songs={fresh}
+        requested={5}
+        regenerating={false}
+        onStartDownload={vi.fn()}
+        onRegenerate={vi.fn().mockResolvedValue(undefined)}
+        onEditInput={vi.fn()}
+      />,
+    );
+    // All checkboxes should be checked again, not the previous mask.
+    expect(screen.getByText(/5곡 중 5곡 선택됨/)).toBeInTheDocument();
+    screen.getAllByTestId("song-list-item").forEach((item) => {
+      expect(item).toHaveAttribute("data-checked", "true");
+    });
+  });
+
+  it("shows a notice when requested > songs.length (dropped no-match items)", () => {
+    renderList({ songs: makeSongs(7), requested: 10 });
+    expect(screen.getByText(/요청한 10곡 중 3곡은.*매칭.*제외/)).toBeInTheDocument();
+  });
+
+  it("hides the dropped-items notice when requested matches songs.length", () => {
+    renderList({ songs: makeSongs(5), requested: 5 });
+    expect(screen.queryByText(/매칭.*제외/)).not.toBeInTheDocument();
   });
 });

@@ -14,6 +14,8 @@ import type { Song } from "@/types/song";
 type Props = {
   query: string;
   songs: Song[];
+  /** Number the user asked for. If `> songs.length`, some matches were dropped. */
+  requested: number;
   regenerating: boolean;
   onStartDownload: (selected: Song[]) => void;
   onRegenerate: () => Promise<void>;
@@ -23,18 +25,23 @@ type Props = {
 export function ListConfirmScreen({
   query,
   songs,
+  requested,
   regenerating,
   onStartDownload,
   onRegenerate,
   onEditInput,
 }: Props) {
+  const droppedCount = Math.max(0, requested - songs.length);
+  const [trackedSongs, setTrackedSongs] = useState(songs);
   const [checkedMask, setCheckedMask] = useState<boolean[]>(() =>
     new Array(songs.length).fill(true),
   );
 
-  // If songs prop changes length (after regenerate), reset the mask. We do this
-  // via a derived check rather than useEffect to avoid an extra render.
-  if (checkedMask.length !== songs.length) {
+  // Reset the mask whenever the songs prop reference changes (regenerate or
+  // first mount of a new list). Identity comparison avoids the bug where a
+  // same-length new list inherits the previous unchecked indices.
+  if (trackedSongs !== songs) {
+    setTrackedSongs(songs);
     setCheckedMask(new Array(songs.length).fill(true));
   }
 
@@ -72,6 +79,11 @@ export function ListConfirmScreen({
             {" · "}썸네일·링크로 미리 들어보고 빼고 싶은 곡은 체크 해제
           </span>
         </p>
+        {droppedCount > 0 && (
+          <p className="text-xs text-muted-foreground">
+            요청한 {requested}곡 중 {droppedCount}곡은 YouTube에서 매칭을 찾지 못해 목록에서 제외했습니다.
+          </p>
+        )}
       </header>
 
       <ol className="space-y-2">

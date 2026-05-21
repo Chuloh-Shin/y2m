@@ -36,7 +36,7 @@ export function ProgressScreen({ job, onReset }: Props) {
 
       <ul className="space-y-2">
         {job.items.map((item, i) => (
-          <SongProgressCard key={i} item={item} />
+          <SongProgressCard key={`${item.youtubeUrl || "item"}-${i}`} item={item} />
         ))}
       </ul>
 

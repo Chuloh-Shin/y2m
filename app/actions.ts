@@ -17,7 +17,7 @@ export type StartJobResult =
   | { ok: false; reason: "busy" | "invalid" };
 
 export async function startUrlConversion(url: string): Promise<StartJobResult> {
-  if (!url || !/^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(url)) {
+  if (!url || !/^https?:\/\/((www\.|m\.|music\.)?youtube\.com|youtu\.be)\//.test(url)) {
     return { ok: false, reason: "invalid" };
   }
   if (hasActiveJob()) {
@@ -120,7 +120,7 @@ async function runPlaylistConversion(jobId: string) {
 }
 
 export type GenerateSongListResult =
-  | { ok: true; songs: Song[] }
+  | { ok: true; songs: Song[]; requested: number }
   | { ok: false; reason: "llm-failed" | "invalid-input" };
 
 export async function generateSongList(
@@ -147,7 +147,8 @@ export async function generateSongList(
       }),
     );
     // Drop entries that have no usable YouTube URL — they cannot be converted.
-    return { ok: true, songs: songs.filter((s) => s.youtubeUrl) };
+    // requested is preserved so the UI can tell the user when matches < N.
+    return { ok: true, songs: songs.filter((s) => s.youtubeUrl), requested: n };
   } catch {
     return { ok: false, reason: "llm-failed" };
   }

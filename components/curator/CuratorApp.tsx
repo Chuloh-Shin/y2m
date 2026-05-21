@@ -27,6 +27,7 @@ export function CuratorApp() {
 
   // List-mode state.
   const [songs, setSongs] = useState<Song[]>([]);
+  const [requestedCount, setRequestedCount] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [listError, setListError] = useState<string | undefined>(undefined);
 
@@ -88,6 +89,7 @@ export function CuratorApp() {
         return;
       }
       setSongs(result.songs);
+      setRequestedCount(result.requested);
       setMode({ kind: "list" });
     } finally {
       setGenerating(false);
@@ -132,6 +134,7 @@ export function CuratorApp() {
       <ListConfirmScreen
         query={query}
         songs={songs}
+        requested={requestedCount}
         regenerating={generating}
         onStartDownload={handleStartDownload}
         onRegenerate={handleGenerateList}
@@ -140,7 +143,14 @@ export function CuratorApp() {
     );
   }
 
-  if (mode.kind === "progress" && job) {
+  if (mode.kind === "progress") {
+    if (!job) {
+      return (
+        <div className="mx-auto max-w-2xl p-6 text-sm text-muted-foreground">
+          시작 중…
+        </div>
+      );
+    }
     return <ProgressScreen job={job} onReset={handleReset} />;
   }
 

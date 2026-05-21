@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { getJob } from "@/lib/jobs";
 
 type RouteParams = { params: Promise<{ jobId: string; index: string }> };
@@ -11,6 +13,12 @@ export async function GET(_req: Request, { params }: RouteParams) {
   const item = job?.items[Number(index)];
   if (!job || !item || item.status !== "done" || !item.filePath) {
     return new NextResponse("Not found", { status: 404 });
+  }
+  // Defense in depth: filePath comes from yt-dlp, but ensure we only stream
+  // files we placed in the OS temp dir for this app.
+  const resolved = path.resolve(item.filePath);
+  if (!resolved.startsWith(path.resolve(tmpdir()))) {
+    return new NextResponse("Forbidden", { status: 403 });
   }
 
   try {

@@ -80,8 +80,12 @@ export async function convertToMp3(
         reject(new Error(`yt-dlp exited ${code}: ${stderr || printed}`));
         return;
       }
-      const lines = printed.trim().split(/\r?\n/);
-      const filePath = lines[lines.length - 1]?.trim();
+      const lines = printed.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      // --print after_move:filepath emits exactly one absolute path. Find the
+      // last absolute path in stdout to be robust against extra yt-dlp output.
+      const filePath = [...lines]
+        .reverse()
+        .find((l) => path.isAbsolute(l));
       if (!filePath) {
         reject(new Error("yt-dlp did not print an output filepath"));
         return;

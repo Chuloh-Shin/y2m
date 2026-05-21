@@ -7,12 +7,15 @@ export type YoutubeMatch = {
   thumbnailUrl: string;
 };
 
-let clientPromise: Promise<Innertube> | null = null;
+// Survives HMR boundaries the same way the jobs store does.
+const globalForYoutube = globalThis as unknown as {
+  __mp3YoutubeClient?: Promise<Innertube>;
+};
 function getClient(): Promise<Innertube> {
-  if (!clientPromise) {
-    clientPromise = Innertube.create();
+  if (!globalForYoutube.__mp3YoutubeClient) {
+    globalForYoutube.__mp3YoutubeClient = Innertube.create();
   }
-  return clientPromise;
+  return globalForYoutube.__mp3YoutubeClient;
 }
 
 export async function searchTopMatch(
