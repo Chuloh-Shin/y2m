@@ -32,6 +32,11 @@ export function ProgressScreen({ job, onReset }: Props) {
         <div data-testid="overall-progress" data-percent={percent}>
           <Progress value={percent} aria-label="전체 진행률" />
         </div>
+        {terminated && completed > 0 && (
+          <p className="text-xs text-muted-foreground">
+            mp3 파일은 사용자 폴더의 Downloads에 저장되었습니다.
+          </p>
+        )}
       </header>
 
       <ul className="space-y-2">
