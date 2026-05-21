@@ -1,22 +1,28 @@
 import type { Job, JobMode, JobStatus, SongJobItem, SongStatus } from "@/types/song";
 import { isTerminal } from "@/types/song";
 
-const jobs = new Map<string, Job>();
-let activeJobId: string | null = null;
+// Next.js dev re-instantiates modules across HMR boundaries, so server
+// actions and route handlers can end up holding different Map instances.
+// Pin the store to globalThis so all server-side code shares it.
+type Store = { jobs: Map<string, Job>; activeJobId: string | null };
+const globalForJobs = globalThis as unknown as { __mp3JobsStore?: Store };
+const store: Store = globalForJobs.__mp3JobsStore ?? { jobs: new Map(), activeJobId: null };
+globalForJobs.__mp3JobsStore = store;
+const jobs = store.jobs;
 
 function newId(): string {
   return `job_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
 export function hasActiveJob(): boolean {
-  if (!activeJobId) return false;
-  const job = jobs.get(activeJobId);
+  if (!store.activeJobId) return false;
+  const job = jobs.get(store.activeJobId);
   if (!job) {
-    activeJobId = null;
+    store.activeJobId = null;
     return false;
   }
   if (job.items.every((it) => isTerminal(it.status))) {
-    activeJobId = null;
+    store.activeJobId = null;
     return false;
   }
   return true;
@@ -29,7 +35,7 @@ export function createJob(mode: JobMode, items: SongJobItem[]): Job {
   const id = newId();
   const job: Job = { id, mode, items, createdAt: Date.now() };
   jobs.set(id, job);
-  activeJobId = id;
+  store.activeJobId = id;
   return job;
 }
 
@@ -68,5 +74,5 @@ export function setItemStatus(
 /** Test helper. */
 export function _reset(): void {
   jobs.clear();
-  activeJobId = null;
+  store.activeJobId = null;
 }
