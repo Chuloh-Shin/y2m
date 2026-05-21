@@ -1,0 +1,170 @@
+=== M1 probe — Gemini × YouTube 매칭 정확도 검증 ===
+
+
+## Query: 여성 20대가 좋아하는 최신 K-pop 댄스곡
+
+  1. NewJeans — Super Shy
+     → NewJeans (뉴진스) 'Super Shy' Official MV
+     → https://www.youtube.com/watch?v=ArmDp-zijuc
+  2. IVE — Kitsch
+     → IVE 아이브 'Kitsch' MV
+     → https://www.youtube.com/watch?v=pG6iaOMV46I
+  3. LE SSERAFIM — EASY
+     → LE SSERAFIM (르세라핌) 'EASY' OFFICIAL MV
+     → https://www.youtube.com/watch?v=bNKXxwOQYB8
+  4. (G)I-DLE — Queencard
+     → (여자)아이들((G)I-DLE) - '퀸카 (Queencard)' Official Music Video
+     → https://www.youtube.com/watch?v=7HDeem-JaSY
+  5. aespa — Drama
+     → aespa 에스파 'Drama' MV
+     → https://www.youtube.com/watch?v=D8VEhcPeSlc
+  6. ITZY — CAKE
+     → ITZY “CAKE” M/V @ITZY
+     → https://www.youtube.com/watch?v=0bIRwBpBcZQ
+  7. STAYC — Teddy Bear
+     → STAYC(스테이씨) 'Teddy Bear' MV
+     → https://www.youtube.com/watch?v=SxHmoifp0oQ
+  8. NMIXX — DASH
+     → NMIXX “DASH” M/V
+     → https://www.youtube.com/watch?v=7UecFm_bSTU
+  9. TWICE — SET ME FREE
+     → TWICE "SET ME FREE" M/V
+     → https://www.youtube.com/watch?v=w4cTYnOPdNk
+  10. BABYMONSTER — SHEESH
+     → BABYMONSTER - ‘SHEESH’ PERFORMANCE VIDEO
+     → https://www.youtube.com/watch?v=kOanBE5Wg24
+
+## Query: 출퇴근용 잔잔한 한국 발라드
+
+  1. 아이유 — 밤편지
+     → [MV] IU(아이유) _ Through the Night(밤편지)
+     → https://www.youtube.com/watch?v=BzYnNdJhZQw
+  2. 성시경 — 거리에서
+     → 성시경 - 거리에서 [가사/Lyrics]
+     → https://www.youtube.com/watch?v=8WYz-UEcLks
+  3. 폴킴 — 모든 날, 모든 순간
+     → 폴킴(Paul Kim) - 모든 날, 모든 순간 (Every day, Every Moment) [키스 먼저 할까요? OST] [가사/Lyrics]
+     → https://www.youtube.com/watch?v=nq0BYGyH2Do
+  4. 다비치 — 이 사랑
+     → [MV] DAVICHI(다비치) - This Love(이 사랑) l Descendants of the Sun 태양의 후예 OST
+     → https://www.youtube.com/watch?v=XyzaMpAVm3s
+  5. 김나영 — 솔직히 말해서
+     → 김나영 - 솔직하게 말해서 나 [가사/Lyrics]
+     → https://www.youtube.com/watch?v=KFDzaisKp1s
+  6. 정승환 — 너였다면
+     → 정승환 - 너였다면 [또 오해영 OST] [가사/Lyrics]
+     → https://www.youtube.com/watch?v=7L3F9EEvidE
+  7. 이적 — 다행이다
+     → 이적 - 다행이다 [가사/Lyrics]
+     → https://www.youtube.com/watch?v=bQzv8He-UqM
+  8. 나얼 — 기억의 빈자리
+     → 나얼 (Naul) - 기억의 빈자리 (Emptiness in Memory) MV
+     → https://www.youtube.com/watch?v=0wlXaHmmOVc
+  9. 로이킴 — 그 때 헤어지면 돼
+     → 로이킴 (Roy Kim) - 그때 헤어지면 돼 (Only then) MV
+     → https://www.youtube.com/watch?v=SkN_hWI6n28
+  10. 정준일 — 안아줘
+     → 정준일 - 안아줘 [더 시즌즈-박보검의 칸타빌레] | KBS 250314 방송
+     → https://www.youtube.com/watch?v=UmjnPUBbZxk
+
+## Query: 운동할 때 듣기 좋은 에너지 넘치는 EDM
+
+  1. Avicii — Levels
+     → Avicii - Levels
+     → https://www.youtube.com/watch?v=_ovdm2yX4MA
+  2. Martin Garrix — Animals
+     → Martin Garrix - Animals (Official Video)
+     → https://www.youtube.com/watch?v=gCYcHz2k5x0
+  3. Swedish House Mafia ft. John Martin — Don't You Worry Child
+     → Swedish House Mafia ft. John Martin - Don't You Worry Child (Official Video)
+     → https://www.youtube.com/watch?v=1y6smkh6c-0
+  4. David Guetta ft. Sia — Titanium
+     → David Guetta - Titanium ft. Sia (Official Video)
+     → https://www.youtube.com/watch?v=JRfuAukYTKg
+  5. Zedd ft. Foxes — Clarity
+     → Zedd - Clarity ft. Foxes
+     → https://www.youtube.com/watch?v=IxxstCcJlsc
+  6. Alesso ft. Tove Lo — Heroes (We Could Be)
+     → Alesso - Heroes (we could be) ft. Tove Lo
+     → https://www.youtube.com/watch?v=a7SouU3ECpU
+  7. Dimitri Vegas & Like Mike vs. Martin Garrix — Tremor
+     → Dimitri Vegas, Martin Garrix, Like Mike - Tremor (Official Music Video)
+     → https://www.youtube.com/watch?v=9vMh9f41pqE
+  8. DVBBS & Borgeous — Tsunami
+     → DVBBS & Borgeous - TSUNAMI (Original Mix)
+     → https://www.youtube.com/watch?v=0EWbonj7f18
+  9. Marshmello — Alone
+     → Marshmello - Alone (Official Music Video)
+     → https://www.youtube.com/watch?v=ALZHF5UqnU4
+  10. DJ Snake & Lil Jon — Turn Down for What
+     → DJ Snake, Lil Jon - Turn Down for What
+     → https://www.youtube.com/watch?v=HMUDVMiITOU
+
+## Query: 공부할 때 듣기 좋은 lofi hip hop
+
+  1. Nujabes — Aruarian Dance
+     → aruarian dance
+     → https://www.youtube.com/watch?v=qYcoJpqCha4
+  2. Nujabes — Reflection
+     → Nujabes - reflection eternal [Official Audio]
+     → https://www.youtube.com/watch?v=2wK27xW4OFI
+  3. Jinsang — Butterflies
+     → ginseng x misogi type beat ~ "Butterflies"
+     → https://www.youtube.com/watch?v=ecYqy-viSQQ
+  4. Jinsang — Affection
+     → jinsang - affection.
+     → https://www.youtube.com/watch?v=6jGPypPNEg4
+  5. Raimu — Maple
+     → Raimu & Tenno - Nightingale
+     → https://www.youtube.com/watch?v=lIHQgxRR5oA
+  6. Chloe Moriondo — Snowman
+     → buttercup - jack stauber (cover)
+     → https://www.youtube.com/watch?v=Cnm1cMqePSU
+  7. Elijah Who — First Snow
+     → Elijah’s First Snow Adventure Of The Year!
+     → https://www.youtube.com/watch?v=PW0lgwe1SHo
+  8. potsu — I'm sorry
+     → i'm closing my eyes
+     → https://www.youtube.com/watch?v=xSB8trUFX1A
+  9. L'indécis — Days Gone
+     → Days Gone in 2023 | Part 2 | - Exploring the World
+     → https://www.youtube.com/watch?v=Eld0EJXN_Fs
+  10. Idealism — Thinking Of You.
+     → Idealism According to Chomsky
+     → https://www.youtube.com/watch?v=FMctndPMnFY
+
+## Query: 2010년대 인기 영화 OST
+
+  1. Idina Menzel — Let It Go
+     → Idina Menzel - Let It Go (from Frozen) (Official Video)
+     → https://www.youtube.com/watch?v=YVVTZgwYwVo
+  2. Ryan Gosling & Emma Stone — City of Stars
+     → 'City of Stars' (Duet ft. Ryan Gosling, Emma Stone) - La La Land Original Motion Picture Soundtrack
+     → https://www.youtube.com/watch?v=GTWqwSNQCcg
+  3. Lady Gaga & Bradley Cooper — Shallow
+     → Lady Gaga, Bradley Cooper - Shallow (from A Star Is Born) (Official Music Video)
+     → https://www.youtube.com/watch?v=bo_efYhYU2A
+  4. Keala Settle & The Greatest Showman Ensemble — This Is Me
+     → The Greatest Showman Cast - This Is Me (Official Lyric Video)
+     → https://www.youtube.com/watch?v=CjxugyZCfuw
+  5. Adele — Skyfall
+     → Adele - Skyfall (Official Lyric Video)
+     → https://www.youtube.com/watch?v=DeumyOzKqgI
+  6. Pharrell Williams — Happy
+     → Pharrell Williams - Happy (Official Video)
+     → https://www.youtube.com/watch?v=ZbZSe6N_BXs
+  7. Wiz Khalifa ft. Charlie Puth — See You Again
+     → Wiz Khalifa - See You Again ft. Charlie Puth [Official Video] Furious 7 Soundtrack
+     → https://www.youtube.com/watch?v=RgKAFK5djSk
+  8. Justin Timberlake — Can't Stop The Feeling!
+     → Justin Timberlake - CAN'T STOP THE FEELING! (from DreamWorks Animation's "TROLLS") (Official Video)
+     → https://www.youtube.com/watch?v=ru0K8uYEZWw
+  9. Anne Hathaway — I Dreamed a Dream
+     → Les Misérables (2012) - I Dreamed A Dream Scene (1/10) | Movieclips
+     → https://www.youtube.com/watch?v=ulJXiB5i_q0
+  10. Coldplay — Atlas
+     → Coldplay - Atlas (Hunger Games: Catching Fire)(Official Lyric Video)
+     → https://www.youtube.com/watch?v=Lh3TokLzzmw
+
+=== 출력 끝. 총 50건. 사용자가 직접 확인해 artifacts/mp3-curator/evidence/probe.md에 정확도를 기록하세요. ===
+
