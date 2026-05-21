@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { generateSongList, getJobStatus, startUrlConversion } from "@/app/actions";
+import {
+  generateSongList,
+  getJobStatus,
+  startPlaylistConversion,
+  startUrlConversion,
+} from "@/app/actions";
 import { InputScreen } from "@/components/curator/InputScreen";
 import { ListConfirmScreen } from "@/components/curator/ListConfirmScreen";
 import { ProgressScreen } from "@/components/curator/ProgressScreen";
@@ -107,9 +112,15 @@ export function CuratorApp() {
     setListError(undefined);
   }, []);
 
-  const handleStartDownload = useCallback((_selected: Song[]) => {
-    // Task 4 wires this up to a playlist server action.
-    toast("Task 4에서 일괄 다운로드를 연결합니다.");
+  const handleStartDownload = useCallback(async (selected: Song[]) => {
+    const result = await startPlaylistConversion(selected);
+    if (!result.ok) {
+      toast.error(
+        result.reason === "busy" ? "이미 변환이 진행 중입니다" : "곡 목록이 비어 있습니다",
+      );
+      return;
+    }
+    setMode({ kind: "progress", jobId: result.jobId });
   }, []);
 
   const handleReset = useCallback(() => {

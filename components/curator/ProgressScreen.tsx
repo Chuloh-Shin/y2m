@@ -2,6 +2,7 @@
 
 import { RiArrowLeftLine } from "@remixicon/react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { SongProgressCard } from "@/components/curator/SongProgressCard";
 import type { JobStatus } from "@/types/song";
 import { isTerminal } from "@/types/song";
@@ -15,9 +16,10 @@ export function ProgressScreen({ job, onReset }: Props) {
   const completed = job.items.filter((it) => it.status === "done").length;
   const failed = job.items.filter((it) => it.status === "failed").length;
   const inProgress = job.items.filter((it) => !isTerminal(it.status)).length;
+  const total = job.items.length;
   const terminated = job.terminated;
+  const percent = total === 0 ? 0 : Math.round(((completed + failed) / total) * 100);
 
-  // Trigger browser download once items reach done.
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-6">
       <header className="space-y-2">
@@ -27,6 +29,9 @@ export function ProgressScreen({ job, onReset }: Props) {
             ? `${completed} 완료 · ${failed} 실패`
             : `${completed} 완료 · ${failed} 실패 · ${inProgress} 진행 중`}
         </p>
+        <div data-testid="overall-progress" data-percent={percent}>
+          <Progress value={percent} aria-label="전체 진행률" />
+        </div>
       </header>
 
       <ul className="space-y-2">

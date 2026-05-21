@@ -49,4 +49,49 @@ describe("ProgressScreen", () => {
     render(<ProgressScreen job={j} onReset={vi.fn()} />);
     expect(screen.getByRole("button", { name: /새 입력으로/ })).toBeEnabled();
   });
+
+  it("shows '완료 N · 실패 N · 진행 중 N' count while in progress", () => {
+    const j = job(
+      [makeItem("done"), makeItem("failed"), makeItem("downloading"), makeItem("converting"), makeItem("pending")],
+      false,
+    );
+    render(<ProgressScreen job={j} onReset={vi.fn()} />);
+    expect(screen.getByText(/1 완료 · 1 실패 · 3 진행 중/)).toBeInTheDocument();
+  });
+
+  it("shows '완료 N · 실패 N' count (no in-progress) once terminated", () => {
+    const j = job(
+      [makeItem("done"), makeItem("done"), makeItem("failed"), makeItem("done")],
+      true,
+    );
+    render(<ProgressScreen job={j} onReset={vi.fn()} />);
+    expect(screen.getByText(/3 완료 · 1 실패/)).toBeInTheDocument();
+  });
+
+  it("renders a progress bar reflecting completion ratio", () => {
+    const j = job([makeItem("done"), makeItem("done"), makeItem("pending"), makeItem("pending")], false);
+    render(<ProgressScreen job={j} onReset={vi.fn()} />);
+    expect(screen.getByTestId("overall-progress")).toHaveAttribute("data-percent", "50");
+  });
+
+  it("progress bar is 100% once every item is terminal (incl. failures)", () => {
+    const j = job([makeItem("done"), makeItem("failed")], true);
+    render(<ProgressScreen job={j} onReset={vi.fn()} />);
+    expect(screen.getByTestId("overall-progress")).toHaveAttribute("data-percent", "100");
+  });
+
+  it("renders exactly N cards for an N-item playlist", () => {
+    const j = job([makeItem("downloading"), makeItem("pending"), makeItem("pending")], false);
+    render(<ProgressScreen job={j} onReset={vi.fn()} />);
+    expect(screen.getAllByTestId("song-progress-card")).toHaveLength(3);
+  });
+
+  it("shows a failure reason on a failed card", () => {
+    const j = job(
+      [makeItem("done"), makeItem("failed", { failureReason: "YouTube에서 못 찾음" })],
+      true,
+    );
+    render(<ProgressScreen job={j} onReset={vi.fn()} />);
+    expect(screen.getByText(/실패 — YouTube에서 못 찾음/)).toBeInTheDocument();
+  });
 });
