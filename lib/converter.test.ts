@@ -7,7 +7,7 @@ describe("buildYtDlpArgs", () => {
   it("normalizes loudness to -10 LUFS during audio extraction", () => {
     const i = args.indexOf("--postprocessor-args");
     expect(i).toBeGreaterThan(-1);
-    expect(args[i + 1]).toBe("ExtractAudio+ffmpeg_o:-af loudnorm=I=-10:TP=-1.0:LRA=11");
+    expect(args[i + 1]).toBe("ExtractAudio+ffmpeg_o:-af loudnorm=I=-10:TP=-2.0:LRA=11");
     expect(LOUDNORM_FILTER).toContain("I=-10");
   });
 

@@ -20,7 +20,9 @@ export type ConvertResult = {
  * Loudness normalization applied while extracting audio, so songs from
  * different uploads play back at a similar volume.
  * - I=-10   integrated loudness target in LUFS
- * - TP=-1.0 true-peak ceiling in dBTP, leaves headroom against clipping
+ * - TP=-2.0 true-peak ceiling in dBTP. Single-pass loudnorm plus mp3
+ *           encoding overshoot it by ~1 dB: with TP=-1.0, files measured
+ *           -0.8 to 0.0 dBFS (clipping edge). -2.0 keeps them near -1.
  * - LRA=11  loudness range target in LU
  *
  * Why -10 and not the streaming reference -14: these files are played in
@@ -33,7 +35,7 @@ export type ConvertResult = {
  *
  * Single-pass: about 1–2 LU of error, but no extra decode per song.
  */
-export const LOUDNORM_FILTER = "loudnorm=I=-10:TP=-1.0:LRA=11";
+export const LOUDNORM_FILTER = "loudnorm=I=-10:TP=-2.0:LRA=11";
 
 export function buildYtDlpArgs(url: string, outTemplate: string, ffmpeg: string): string[] {
   return [
