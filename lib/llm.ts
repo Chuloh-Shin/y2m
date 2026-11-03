@@ -72,27 +72,45 @@ export function filterRecent(
 }
 
 /**
+ * Most songs any one artist may contribute to a list. A fresh album puts
+ * all its b-sides on the chart at once; without a cap one act fills the list.
+ */
+export const MAX_PER_ARTIST = 2;
+
+/**
  * Map the ranks the model picked back onto real chart entries.
  * Unknown ranks and duplicates are dropped, so nothing outside the chart
- * can ever reach the user.
+ * can ever reach the user, and each artist is capped at `maxPerArtist`.
  */
 export function pickChartEntries(
   ranks: unknown,
   chart: ChartEntry[],
   count: number,
+  maxPerArtist = MAX_PER_ARTIST,
 ): SongSeed[] {
   if (!Array.isArray(ranks)) return [];
   const byRank = new Map(chart.map((e) => [e.rank, e]));
   const seen = new Set<number>();
+  const perArtist = new Map<string, number>();
   const picked: SongSeed[] = [];
   for (const r of ranks) {
     const entry = typeof r === "number" ? byRank.get(r) : undefined;
     if (!entry || seen.has(entry.rank)) continue;
     seen.add(entry.rank);
+    const artistKey = entry.artist.toLowerCase();
+    const n = perArtist.get(artistKey) ?? 0;
+    if (n >= maxPerArtist) continue;
+    perArtist.set(artistKey, n + 1);
     picked.push({ title: entry.title, artist: entry.artist });
     if (picked.length === count) break;
   }
   return picked;
+}
+
+/** One chart line as shown to the model: "25. 꾼 — PLAVE [R&B/Soul, 2026-10]". */
+export function formatChartLine(e: ChartEntry): string {
+  const meta = [e.genre, e.releasedOn?.slice(0, 7)].filter(Boolean).join(", ");
+  return `${e.rank}. ${e.title} — ${e.artist}${meta ? ` [${meta}]` : ""}`;
 }
 
 async function selectFromChart(
@@ -101,19 +119,16 @@ async function selectFromChart(
   count: number,
   chart: ChartEntry[],
 ): Promise<SongSeed[]> {
-  const list = chart
-    .map(
-      (e) =>
-        `${e.rank}. ${e.title} — ${e.artist}${e.releasedOn ? ` (발매 ${e.releasedOn.slice(0, 7)})` : ""}`,
-    )
-    .join("\n");
+  const list = chart.map(formatChartLine).join("\n");
   const prompt = [
-    "아래는 지금 이 순간의 멜론 실시간 차트입니다.",
+    "아래는 지금 이 순간의 멜론 실시간 차트입니다. 대괄호 안은 [멜론 공식 장르, 발매월]입니다.",
     list,
     "",
     `사용자 취향: "${query}"`,
     `위 차트에서 취향에 맞는 곡을 최대 ${count}개 골라, 잘 맞는 순서대로 순위 번호(rank) 배열로만 답하세요.`,
-    "장르·분위기·대상(연령/성별 등) 조건을 지키고, 맞지 않는 곡은 개수를 채우려고 억지로 넣지 마세요.",
+    "취향에 장르 조건(예: 댄스, 발라드, 힙합)이 있으면 대괄호 안의 공식 장르를 기준으로 엄격히 지키세요. 아티스트 이미지로 장르를 추측하지 마세요.",
+    `한 아티스트의 곡은 최대 ${MAX_PER_ARTIST}곡까지만 고르세요.`,
+    "분위기·대상(연령/성별 등) 조건도 지키고, 맞지 않는 곡은 개수를 채우려고 억지로 넣지 마세요.",
     "차트에 취향과 맞는 곡이 하나도 없으면 빈 배열 []을 반환하세요.",
   ].join("\n");
 
@@ -134,22 +149,18 @@ async function selectFromChart(
 /**
  * Recommend songs for a taste query.
  *
- * With a chart: the model only chooses from the current chart (hybrid mode),
- * which keeps results current and hallucination-free. If the chart has
- * nothing matching the taste (e.g. "2000년대 힙합"), or no chart is given,
- * fall back to Google-Search-grounded free recommendation.
+ * With chart candidates: the model only chooses among them (hybrid mode),
+ * which keeps results current and hallucination-free. The caller prepares
+ * the candidates (recency filter, genre enrichment). If none match the taste
+ * (e.g. "2000년대 힙합"), or none are given, fall back to
+ * Google-Search-grounded free recommendation.
  */
 export async function generateSongList(
   query: string,
   count: number,
-  chart?: ChartEntry[],
+  candidates?: ChartEntry[],
 ): Promise<SongSeed[]> {
   const ai = getClient();
-
-  // "최신" means recently released, not merely still charting — so a
-  // 2024 hit sitting at #80 must not qualify. Enforced in code, not prompt.
-  const candidates =
-    chart && isRecencyQuery(query) ? filterRecent(chart, new Date()) : chart;
 
   if (candidates && candidates.length > 0) {
     const picked = await selectFromChart(ai, query, count, candidates);

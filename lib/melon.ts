@@ -3,10 +3,21 @@ import type { ChartEntry } from "@/types/song";
 // Melon has no public API, so we read the public realtime chart page.
 // If Melon changes its markup, parseMelonChart returns [] and callers fall back.
 const CHART_URL = "https://www.melon.com/chart/index.htm";
+const SONG_URL = "https://www.melon.com/song/detail.htm?songId=";
 const CACHE_TTL_MS = 10 * 60 * 1000;
+const GENRE_CONCURRENCY = 6;
+
+const HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+  Referer: "https://www.melon.com/",
+  "Accept-Language": "ko-KR,ko;q=0.9",
+};
 
 const globalForMelon = globalThis as unknown as {
   __melonChartCache?: { at: number; entries: ChartEntry[] };
+  // A song's genre never changes, so this cache never expires.
+  __melonGenreCache?: Map<string, string>;
 };
 
 function decodeEntities(s: string): string {
@@ -45,11 +56,15 @@ export function parseMelonChart(html: string): ChartEntry[] {
     if (!title || !artist) continue;
 
     // Album art URLs embed an upload timestamp (…/15082293_20261026170443_500.jpg)
-    // that tracks the release date within days. Re-uploads can only make it
-    // later, never earlier, so it is safe for "too old" filtering.
+    // that tracks the release date within about two weeks either way: art is
+    // often uploaded shortly before release (With: art 10-26, release 11-03)
+    // and re-uploads push it later. Close enough for a months-wide window.
     const d = row.match(/album\/images\/[^"]*?_(\d{4})(\d{2})(\d{2})\d*_500/);
-    const releasedOn = d ? `${d[1]}-${d[2]}-${d[3]}` : undefined;
-    entries.push(releasedOn ? { rank, title, artist, releasedOn } : { rank, title, artist });
+    const songId = row.match(/data-song-no="(\d+)"/)?.[1];
+    const entry: ChartEntry = { rank, title, artist };
+    if (songId) entry.songId = songId;
+    if (d) entry.releasedOn = `${d[1]}-${d[2]}-${d[3]}`;
+    entries.push(entry);
   }
 
   return entries;
@@ -60,12 +75,7 @@ export async function fetchMelonChart(): Promise<ChartEntry[]> {
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.entries;
 
   const res = await fetch(CHART_URL, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
-      Referer: "https://www.melon.com/",
-      "Accept-Language": "ko-KR,ko;q=0.9",
-    },
+    headers: HEADERS,
     signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) throw new Error(`Melon chart request failed: ${res.status}`);
@@ -75,4 +85,46 @@ export async function fetchMelonChart(): Promise<ChartEntry[]> {
 
   globalForMelon.__melonChartCache = { at: Date.now(), entries };
   return entries;
+}
+
+/** Read the official genre from a Melon song detail page (`<dt>장르</dt><dd>댄스</dd>`). */
+export function parseSongGenre(html: string): string | undefined {
+  const m = html.match(/<dt>장르<\/dt>\s*<dd>([\s\S]*?)<\/dd>/);
+  const genre = m ? decodeEntities(m[1].replace(/<[^>]+>/g, "")) : "";
+  return genre || undefined;
+}
+
+async function fetchSongGenre(songId: string): Promise<string | undefined> {
+  const res = await fetch(SONG_URL + songId, {
+    headers: HEADERS,
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!res.ok) return undefined;
+  return parseSongGenre(await res.text());
+}
+
+/**
+ * Attach the official genre to each entry. Genres are cached per song id
+ * forever, so after the first search only songs new to the chart are fetched.
+ * A failed lookup leaves `genre` undefined and is retried next time.
+ */
+export async function enrichWithGenres(entries: ChartEntry[]): Promise<ChartEntry[]> {
+  const cache = (globalForMelon.__melonGenreCache ??= new Map());
+  const missing = [
+    ...new Set(entries.map((e) => e.songId).filter((id): id is string => !!id && !cache.has(id))),
+  ];
+
+  for (let i = 0; i < missing.length; i += GENRE_CONCURRENCY) {
+    await Promise.all(
+      missing.slice(i, i + GENRE_CONCURRENCY).map(async (id) => {
+        const genre = await fetchSongGenre(id).catch(() => undefined);
+        if (genre) cache.set(id, genre);
+      }),
+    );
+  }
+
+  return entries.map((e) => {
+    const genre = e.songId ? cache.get(e.songId) : undefined;
+    return genre ? { ...e, genre } : e;
+  });
 }

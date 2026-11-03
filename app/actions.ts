@@ -11,8 +11,12 @@ import {
   setItemStatus,
   updateItem,
 } from "@/lib/jobs";
-import { generateSongList as generateSongListFromLlm } from "@/lib/llm";
-import { fetchMelonChart } from "@/lib/melon";
+import {
+  filterRecent,
+  generateSongList as generateSongListFromLlm,
+  isRecencyQuery,
+} from "@/lib/llm";
+import { enrichWithGenres, fetchMelonChart } from "@/lib/melon";
 import { searchTopMatch } from "@/lib/youtube";
 import type { JobStatus, Song, SongJobItem } from "@/types/song";
 
@@ -133,6 +137,18 @@ async function runPlaylistConversion(jobId: string) {
   }
 }
 
+/**
+ * Current chart songs the LLM may choose from. "최신" means recently
+ * released, not merely still charting — so a 2024 hit sitting at #80 is
+ * dropped in code. Genres are fetched only for the songs that survive,
+ * which keeps Melon requests down.
+ */
+async function prepareChartCandidates(query: string) {
+  const chart = await fetchMelonChart();
+  const candidates = isRecencyQuery(query) ? filterRecent(chart, new Date()) : chart;
+  return enrichWithGenres(candidates);
+}
+
 export type GenerateSongListResult =
   | { ok: true; songs: Song[]; requested: number }
   | { ok: false; reason: "llm-failed" | "invalid-input" };
@@ -147,10 +163,10 @@ export async function generateSongList(
 
   // Chart is best-effort: if Melon is down or its markup changed,
   // the LLM falls back to search-grounded recommendation.
-  const chart = await fetchMelonChart().catch(() => undefined);
+  const candidates = await prepareChartCandidates(trimmed).catch(() => undefined);
 
   try {
-    const seeds = await generateSongListFromLlm(trimmed, n, chart);
+    const seeds = await generateSongListFromLlm(trimmed, n, candidates);
     const songs: Song[] = await Promise.all(
       seeds.map(async (seed) => {
         const match = await searchTopMatch(`${seed.artist} ${seed.title}`).catch(

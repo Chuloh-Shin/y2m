@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseMelonChart } from "./melon";
+import { parseMelonChart, parseSongGenre } from "./melon";
 
 function row(
   rank: number,
@@ -11,7 +11,7 @@ function row(
   const img = imgStamp
     ? `<td><a href="/album/detail.htm?albumId=1"><img src="https://cdnimg.melon.co.kr/cm2/album/images/150/82/293/15082293_${imgStamp}_500.jpg/melon/resize/120/quality/80/optimize"/></a></td>`
     : "";
-  return `<tr class="${cls}" id="${cls}" data-song-no="1">
+  return `<tr class="${cls}" id="${cls}" data-song-no="${rank}00">
     <td><div class="wrap t_center"><span class="rank ">${rank}</span><span class="none">위</span></div></td>
     ${img}
     <td><div class="wrap_song_info">
@@ -31,15 +31,15 @@ describe("parseMelonChart", () => {
   it("extracts rank, title and artist from lst50 and lst100 rows", () => {
     const html = `<table>${row(1, "With", a("RESCENE&nbsp;(리센느)"))}${row(51, "Drama", a("aespa"), "lst100")}</table>`;
     expect(parseMelonChart(html)).toEqual([
-      { rank: 1, title: "With", artist: "RESCENE (리센느)" },
-      { rank: 51, title: "Drama", artist: "aespa" },
+      { rank: 1, title: "With", artist: "RESCENE (리센느)", songId: "100" },
+      { rank: 51, title: "Drama", artist: "aespa", songId: "5100" },
     ]);
   });
 
   it("joins multiple artists with a comma", () => {
     const html = row(2, "NEON", `${a("A2O")}, ${a("A2O&nbsp;LITE")}`);
     expect(parseMelonChart(html)).toEqual([
-      { rank: 2, title: "NEON", artist: "A2O, A2O LITE" },
+      { rank: 2, title: "NEON", artist: "A2O, A2O LITE", songId: "200" },
     ]);
   });
 
@@ -54,6 +54,7 @@ describe("parseMelonChart", () => {
       rank: 80,
       title: "Whiplash",
       artist: "aespa",
+      songId: "8000",
       releasedOn: "2024-10-18",
     });
   });
@@ -64,5 +65,27 @@ describe("parseMelonChart", () => {
 
   it("returns [] when the markup has no chart rows", () => {
     expect(parseMelonChart("<html><body>점검 중</body></html>")).toEqual([]);
+  });
+});
+
+describe("parseSongGenre", () => {
+  it("reads the genre from a song detail page", () => {
+    const html = `<dl class="list">
+							<dt>앨범</dt>
+							<dd><a href="javascript:melon.link.goAlbumDetail('15082293');">PULSE</a></dd>
+							<dt>발매일</dt>
+							<dd>2026.11.03</dd>
+							<dt>장르</dt>
+							<dd>댄스</dd>
+						</dl>`;
+    expect(parseSongGenre(html)).toBe("댄스");
+  });
+
+  it("decodes entities such as R&amp;B/Soul", () => {
+    expect(parseSongGenre("<dt>장르</dt><dd>R&amp;B/Soul</dd>")).toBe("R&B/Soul");
+  });
+
+  it("returns undefined when there is no genre field", () => {
+    expect(parseSongGenre("<dt>발매일</dt><dd>2026.11.03</dd>")).toBeUndefined();
   });
 });

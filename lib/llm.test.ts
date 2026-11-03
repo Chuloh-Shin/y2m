@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { filterRecent, isRecencyQuery, parseSongSeeds, pickChartEntries } from "./llm";
+import {
+  filterRecent,
+  formatChartLine,
+  isRecencyQuery,
+  parseSongSeeds,
+  pickChartEntries,
+} from "./llm";
 import type { ChartEntry } from "@/types/song";
 
 const chart: ChartEntry[] = [
@@ -66,6 +72,21 @@ describe("pickChartEntries", () => {
     expect(pickChartEntries([1, 2, 3], chart, 2)).toHaveLength(2);
   });
 
+  it("caps each artist at 2 songs and keeps going to fill the list", () => {
+    const albumDrop: ChartEntry[] = [
+      { rank: 1, title: "With", artist: "RESCENE (리센느)" },
+      { rank: 3, title: "백화요란", artist: "RESCENE (리센느)" },
+      { rank: 4, title: "Finest Thing", artist: "RESCENE (리센느)" },
+      { rank: 7, title: "MEME", artist: "RESCENE (리센느)" },
+      { rank: 10, title: "체포하겠어", artist: "아일릿(ILLIT)" },
+    ];
+    expect(pickChartEntries([1, 3, 4, 7, 10], albumDrop, 5).map((s) => s.title)).toEqual([
+      "With",
+      "백화요란",
+      "체포하겠어",
+    ]);
+  });
+
   it("returns [] for an empty or malformed selection", () => {
     expect(pickChartEntries([], chart, 5)).toEqual([]);
     expect(pickChartEntries({ rank: 1 }, chart, 5)).toEqual([]);
@@ -107,5 +128,17 @@ describe("parseSongSeeds", () => {
 
   it("throws when no JSON array is present", () => {
     expect(() => parseSongSeeds("검색 결과가 없습니다.")).toThrow();
+  });
+});
+
+describe("formatChartLine", () => {
+  it("shows genre and release month in brackets", () => {
+    expect(
+      formatChartLine({ rank: 25, title: "꾼", artist: "PLAVE", genre: "R&B/Soul", releasedOn: "2026-10-07" }),
+    ).toBe("25. 꾼 — PLAVE [R&B/Soul, 2026-10]");
+  });
+
+  it("omits the brackets when nothing is known", () => {
+    expect(formatChartLine({ rank: 1, title: "With", artist: "RESCENE" })).toBe("1. With — RESCENE");
   });
 });

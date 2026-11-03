@@ -9,8 +9,12 @@ export type SongSeed = Pick<Song, "title" | "artist">;
 
 export type ChartEntry = SongSeed & {
   rank: number;
+  /** Melon song id, used to look up song details such as genre. */
+  songId?: string;
   /** Approximate release date (YYYY-MM-DD), taken from the album art upload date. */
   releasedOn?: string;
+  /** Official Melon genre, e.g. "댄스", "R&B/Soul". Filled by enrichWithGenres. */
+  genre?: string;
 };
 
 export type SongStatus =
