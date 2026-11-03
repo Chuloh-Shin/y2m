@@ -13,8 +13,12 @@ function renderInput(over: Override = {}) {
     onCountChange: vi.fn(),
     onGenerateList: vi.fn().mockResolvedValue(undefined),
     onSubmitUrl: vi.fn().mockResolvedValue(undefined),
+    listText: "",
+    onListTextChange: vi.fn(),
+    onMatchList: vi.fn().mockResolvedValue(undefined),
     disabled: false,
     generating: false,
+    matching: false,
     errorMessage: undefined,
     ...over,
   };
@@ -134,6 +138,40 @@ describe("InputScreen", () => {
       expect(screen.getByLabelText(/YouTube 영상 URL/)).toBeDisabled();
       expect(screen.getByLabelText(/어떤 곡을 듣고 싶으세요/)).toBeDisabled();
       expect(screen.getByRole("button", { name: /변환/ })).toBeDisabled();
+      expect(screen.getByRole("button", { name: /곡 목록 만들기/ })).toBeDisabled();
+    });
+  });
+
+  describe("list mode", () => {
+    it("renders the song list field and 곡 찾기 button", () => {
+      renderInput();
+      expect(screen.getByLabelText("곡 목록")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /곡 찾기/ })).toBeInTheDocument();
+    });
+
+    it("disables 곡 찾기 while the list is blank", () => {
+      renderInput({ listText: "  \n " });
+      expect(screen.getByRole("button", { name: /곡 찾기/ })).toBeDisabled();
+    });
+
+    it("forwards typing to onListTextChange", async () => {
+      const user = userEvent.setup();
+      const { props } = renderInput();
+      await user.type(screen.getByLabelText("곡 목록"), "a");
+      expect(props.onListTextChange).toHaveBeenCalledWith("a");
+    });
+
+    it("calls onMatchList when 곡 찾기 is clicked with a list", async () => {
+      const user = userEvent.setup();
+      const { props } = renderInput({ listText: "제목만\n- 7 rings" });
+      await user.click(screen.getByRole("button", { name: /곡 찾기/ }));
+      expect(props.onMatchList).toHaveBeenCalledTimes(1);
+    });
+
+    it("locks every mode while a list is being matched", () => {
+      renderInput({ listText: "- 7 rings", query: "댄스", matching: true });
+      expect(screen.getByLabelText("곡 목록")).toBeDisabled();
+      expect(screen.getByRole("button", { name: /곡 찾기/ })).toBeDisabled();
       expect(screen.getByRole("button", { name: /곡 목록 만들기/ })).toBeDisabled();
     });
   });

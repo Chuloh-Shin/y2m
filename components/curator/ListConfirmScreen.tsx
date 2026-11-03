@@ -12,13 +12,17 @@ import { SongListItem } from "@/components/curator/SongListItem";
 import type { Song } from "@/types/song";
 
 type Props = {
+  /** Shown under the heading: the taste query, or a summary of a pasted list. */
   query: string;
   songs: Song[];
   /** Number the user asked for. If `> songs.length`, some matches were dropped. */
   requested: number;
+  /** Names of the dropped songs, when known (pasted-list mode). */
+  unmatched?: string[];
   regenerating: boolean;
   onStartDownload: (selected: Song[]) => void;
-  onRegenerate: () => Promise<void>;
+  /** Omit to hide "다시 생성" — re-searching a pasted list gives the same result. */
+  onRegenerate?: () => Promise<void>;
   onEditInput: () => void;
 };
 
@@ -26,6 +30,7 @@ export function ListConfirmScreen({
   query,
   songs,
   requested,
+  unmatched,
   regenerating,
   onStartDownload,
   onRegenerate,
@@ -81,7 +86,8 @@ export function ListConfirmScreen({
         </p>
         {droppedCount > 0 && (
           <p className="text-xs text-muted-foreground">
-            요청한 {requested}곡 중 {droppedCount}곡은 YouTube에서 매칭을 찾지 못해 목록에서 제외했습니다.
+            요청한 {requested}곡 중 {droppedCount}곡은 YouTube에서 매칭을 찾지 못해 목록에서 제외했습니다
+            {unmatched && unmatched.length > 0 ? `: ${unmatched.join(", ")}` : "."}
           </p>
         )}
       </header>
@@ -105,10 +111,12 @@ export function ListConfirmScreen({
           <RiDownloadLine data-icon="inline-start" />
           다운로드 시작 ({selectedCount}곡)
         </Button>
-        <Button variant="outline" onClick={onRegenerate} disabled={regenerating}>
-          <RiRefreshLine data-icon="inline-start" />
-          다시 생성
-        </Button>
+        {onRegenerate && (
+          <Button variant="outline" onClick={onRegenerate} disabled={regenerating}>
+            <RiRefreshLine data-icon="inline-start" />
+            다시 생성
+          </Button>
+        )}
         <Button variant="outline" onClick={onEditInput} disabled={regenerating}>
           <RiEditLine data-icon="inline-start" />
           입력 수정

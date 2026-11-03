@@ -175,4 +175,20 @@ describe("ListConfirmScreen", () => {
     renderList({ songs: makeSongs(5), requested: 5 });
     expect(screen.queryByText(/매칭.*제외/)).not.toBeInTheDocument();
   });
+
+  describe("pasted-list mode", () => {
+    it("names the songs YouTube could not match", () => {
+      renderList({ songs: makeSongs(3), requested: 5, unmatched: ["김버거 쉬었음 청년", "무너져 난"] });
+      expect(
+        screen.getByText(/2곡은 YouTube에서 매칭을 찾지 못해 목록에서 제외했습니다: 김버거 쉬었음 청년, 무너져 난/),
+      ).toBeInTheDocument();
+    });
+
+    it("hides 다시 생성 when no onRegenerate is given", () => {
+      renderList({ onRegenerate: undefined });
+      expect(screen.queryByRole("button", { name: /다시 생성/ })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /다운로드 시작/ })).toBeInTheDocument();
+    });
+  });
 });
+

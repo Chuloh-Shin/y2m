@@ -17,6 +17,7 @@ import {
   isRecencyQuery,
 } from "@/lib/llm";
 import { enrichWithGenres, fetchMelonChart } from "@/lib/melon";
+import { parseSongList, searchQueryFor } from "@/lib/songlist";
 import { searchTopMatch } from "@/lib/youtube";
 import type { JobStatus, Song, SongJobItem } from "@/types/song";
 
@@ -186,4 +187,48 @@ export async function generateSongList(
   } catch {
     return { ok: false, reason: "llm-failed" };
   }
+}
+
+export type MatchSongListResult =
+  | {
+      ok: true;
+      songs: Song[];
+      requested: number;
+      /** "가수 제목" labels of songs YouTube had no match for. */
+      unmatched: string[];
+      /** Songs cut because the list was longer than MAX_LIST_ITEMS. */
+      truncated: number;
+    }
+  | { ok: false; reason: "invalid-input" };
+
+const SEARCH_CONCURRENCY = 5;
+
+/** Find a YouTube video for every song in a pasted list. */
+export async function matchSongList(text: string): Promise<MatchSongListResult> {
+  const { songs: seeds, truncated } = parseSongList(text ?? "");
+  if (seeds.length === 0) return { ok: false, reason: "invalid-input" };
+
+  const matched: (Song | null)[] = new Array(seeds.length).fill(null);
+  for (let i = 0; i < seeds.length; i += SEARCH_CONCURRENCY) {
+    await Promise.all(
+      seeds.slice(i, i + SEARCH_CONCURRENCY).map(async (seed, j) => {
+        const match = await searchTopMatch(searchQueryFor(seed)).catch(() => null);
+        if (!match) return;
+        matched[i + j] = {
+          title: seed.title,
+          artist: seed.artist,
+          youtubeUrl: match.url,
+          thumbnailUrl: match.thumbnailUrl,
+        };
+      }),
+    );
+  }
+
+  return {
+    ok: true,
+    songs: matched.filter((s): s is Song => s !== null),
+    requested: seeds.length,
+    unmatched: seeds.filter((_, i) => !matched[i]).map(searchQueryFor),
+    truncated,
+  };
 }

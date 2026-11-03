@@ -4,16 +4,30 @@ import { useState } from "react";
 import {
   RiAlertLine,
   RiDownloadLine,
+  RiListCheck2,
   RiMusic2Line,
   RiPlayListLine,
   RiRefreshLine,
 } from "@remixicon/react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
+
+const LIST_PLACEHOLDER = `조선힙합
+- 답정너
+- 세상은 요지경
+
+가수 : 김버거
+- 쉬었음 청년
+
+제목만
+- hot honey
+- 7 rings`;
 
 const MIN_COUNT = 1;
 const MAX_COUNT = 50;
@@ -25,10 +39,16 @@ type Props = {
   onCountChange: (v: number) => void;
   onGenerateList: () => Promise<void>;
   onSubmitUrl: (url: string) => Promise<void>;
+  /** Pasted song list, preserved across "입력 수정". */
+  listText: string;
+  onListTextChange: (v: string) => void;
+  onMatchList: () => Promise<void>;
   /** Generic external disable (e.g. another job actively running). */
   disabled: boolean;
   /** True while the song-list LLM call is in flight. */
   generating: boolean;
+  /** True while the pasted list is being searched on YouTube. */
+  matching: boolean;
   /** Non-null when the last list-generation attempt failed. */
   errorMessage?: string;
 };
@@ -45,18 +65,31 @@ export function InputScreen({
   onCountChange,
   onGenerateList,
   onSubmitUrl,
+  listText,
+  onListTextChange,
+  onMatchList,
   disabled,
   generating,
+  matching,
   errorMessage,
 }: Props) {
   const [url, setUrl] = useState("");
   const [submittingUrl, setSubmittingUrl] = useState(false);
 
   const queryTrimmed = query.trim();
-  const tasteDisabled = disabled || generating || submittingUrl;
-  const urlDisabled = disabled || generating || submittingUrl;
+  const busy = disabled || generating || matching || submittingUrl;
+  const tasteDisabled = busy;
+  const urlDisabled = busy;
+  const listDisabled = busy;
 
   const canGenerate = !tasteDisabled && queryTrimmed.length > 0;
+  const canMatchList = !listDisabled && listText.trim().length > 0;
+
+  async function handleMatchList(e: React.FormEvent) {
+    e.preventDefault();
+    if (!canMatchList) return;
+    await onMatchList();
+  }
   const urlInvalid = url.length > 0 && !/^https?:\/\//.test(url);
   const canSubmitUrl = !urlDisabled && url.length > 0 && !urlInvalid;
 
@@ -136,6 +169,41 @@ export function InputScreen({
               <RiPlayListLine data-icon="inline-start" />
             )}
             {errorMessage ? "다시 시도" : "곡 목록 만들기"}
+          </Button>
+        </div>
+      </form>
+
+      <div className="flex items-center gap-3">
+        <Separator className="flex-1" />
+        <span className="text-xs text-muted-foreground">또는</span>
+        <Separator className="flex-1" />
+      </div>
+
+      {/* 목록 모드 */}
+      <form onSubmit={handleMatchList} className="space-y-4 rounded-md border border-border bg-card p-5">
+        <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          목록으로 받기
+        </div>
+
+        <Field data-disabled={listDisabled || undefined}>
+          <FieldLabel htmlFor="curator-list">곡 목록</FieldLabel>
+          <Textarea
+            id="curator-list"
+            rows={8}
+            placeholder={LIST_PLACEHOLDER}
+            value={listText}
+            onChange={(e) => onListTextChange(e.target.value)}
+            disabled={listDisabled}
+          />
+          <FieldDescription>
+            한 줄에 한 곡. &quot;- 제목&quot; 위에 가수 이름이나 &quot;가수 : 이름&quot;을 쓰면 그 가수로, &quot;제목만&quot;이면 제목으로만 찾습니다.
+          </FieldDescription>
+        </Field>
+
+        <div className="flex">
+          <Button type="submit" className="md:ml-auto" disabled={!canMatchList}>
+            {matching ? <Spinner data-icon="inline-start" /> : <RiListCheck2 data-icon="inline-start" />}
+            곡 찾기
           </Button>
         </div>
       </form>

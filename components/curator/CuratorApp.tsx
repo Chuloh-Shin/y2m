@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   generateSongList,
   getJobStatus,
+  matchSongList,
   startPlaylistConversion,
   startUrlConversion,
 } from "@/app/actions";
@@ -25,9 +26,15 @@ export function CuratorApp() {
   const [query, setQuery] = useState("");
   const [count, setCount] = useState(DEFAULT_COUNT);
 
-  // List-mode state.
+  // Pasted-list input state, preserved across "입력 수정".
+  const [listText, setListText] = useState("");
+  const [matching, setMatching] = useState(false);
+
+  // List-mode state. `source` says which input produced the current list.
   const [songs, setSongs] = useState<Song[]>([]);
   const [requestedCount, setRequestedCount] = useState(0);
+  const [source, setSource] = useState<"taste" | "paste">("taste");
+  const [unmatched, setUnmatched] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [listError, setListError] = useState<string | undefined>(undefined);
 
@@ -75,11 +82,41 @@ export function CuratorApp() {
       }
       setSongs(result.songs);
       setRequestedCount(result.requested);
+      setSource("taste");
+      setUnmatched([]);
       setMode({ kind: "list" });
     } finally {
       setGenerating(false);
     }
   }, [query, count]);
+
+  const handleMatchList = useCallback(async () => {
+    setMatching(true);
+    setListError(undefined);
+    try {
+      const result = await matchSongList(listText);
+      if (!result.ok) {
+        setListError("곡 목록을 한 줄에 한 곡씩 입력해주세요.");
+        return;
+      }
+      if (result.songs.length === 0) {
+        setListError("목록의 곡을 YouTube에서 하나도 찾지 못했습니다. 가수 이름을 함께 적어보세요.");
+        return;
+      }
+      if (result.truncated > 0) {
+        toast.info(`한 번에 최대 ${result.requested}곡까지 받을 수 있어 ${result.truncated}곡은 제외했습니다`);
+      }
+      setSongs(result.songs);
+      setRequestedCount(result.requested);
+      setSource("paste");
+      setUnmatched(result.unmatched);
+      setMode({ kind: "list" });
+    } catch {
+      setListError("곡 검색 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setMatching(false);
+    }
+  }, [listText]);
 
   const handleSubmitUrl = useCallback(async (url: string) => {
     const result = await startUrlConversion(url);
@@ -117,12 +154,13 @@ export function CuratorApp() {
   if (mode.kind === "list") {
     return (
       <ListConfirmScreen
-        query={query}
+        query={source === "paste" ? `붙여넣은 목록 ${requestedCount}곡` : query}
         songs={songs}
         requested={requestedCount}
+        unmatched={source === "paste" ? unmatched : undefined}
         regenerating={generating}
         onStartDownload={handleStartDownload}
-        onRegenerate={handleGenerateList}
+        onRegenerate={source === "taste" ? handleGenerateList : undefined}
         onEditInput={handleEditInput}
       />
     );
@@ -147,8 +185,12 @@ export function CuratorApp() {
       onCountChange={setCount}
       onGenerateList={handleGenerateList}
       onSubmitUrl={handleSubmitUrl}
+      listText={listText}
+      onListTextChange={setListText}
+      onMatchList={handleMatchList}
       disabled={false}
       generating={generating}
+      matching={matching}
       errorMessage={listError}
     />
   );
