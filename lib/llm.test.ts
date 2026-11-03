@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSongSeeds, pickChartEntries } from "./llm";
+import { filterRecent, isRecencyQuery, parseSongSeeds, pickChartEntries } from "./llm";
 import type { ChartEntry } from "@/types/song";
 
 const chart: ChartEntry[] = [
@@ -7,6 +7,46 @@ const chart: ChartEntry[] = [
   { rank: 2, title: "NEON", artist: "A2O, A2O LITE" },
   { rank: 3, title: "꿈꾸던 어른이 되었나요?", artist: "경서예지" },
 ];
+
+describe("isRecencyQuery", () => {
+  it.each([
+    "2026년 11월 기준 20대 여성이 좋아하는 최신 아이돌 댄스곡",
+    "요즘 신곡",
+    "최근 유행하는 노래",
+  ])("treats %s as a recency query", (q) => {
+    expect(isRecencyQuery(q)).toBe(true);
+  });
+
+  it("does not treat a plain taste query as recency", () => {
+    expect(isRecencyQuery("2000년대 미국 힙합")).toBe(false);
+  });
+});
+
+describe("filterRecent", () => {
+  const now = new Date("2026-11-03T12:00:00Z");
+  const songs: ChartEntry[] = [
+    { rank: 1, title: "With", artist: "RESCENE", releasedOn: "2026-10-26" },
+    { rank: 32, title: "Spring Song", artist: "aespa", releasedOn: "2026-03-10" },
+    { rank: 80, title: "Whiplash", artist: "aespa", releasedOn: "2024-10-18" },
+    { rank: 90, title: "Unknown", artist: "Z" },
+  ];
+
+  it("drops songs released more than 6 months ago, e.g. Whiplash (2024-10)", () => {
+    expect(filterRecent(songs, now).map((e) => e.title)).toEqual(["With", "Unknown"]);
+  });
+
+  it("keeps songs whose release date is unknown", () => {
+    expect(filterRecent(songs, now).some((e) => e.title === "Unknown")).toBe(true);
+  });
+
+  it("honours a custom window", () => {
+    expect(filterRecent(songs, now, 12).map((e) => e.title)).toEqual([
+      "With",
+      "Spring Song",
+      "Unknown",
+    ]);
+  });
+});
 
 describe("pickChartEntries", () => {
   it("maps picked ranks to chart songs in the model's order", () => {

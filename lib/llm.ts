@@ -49,6 +49,28 @@ export function parseSongSeeds(text: string): SongSeed[] {
     .filter((s) => s.title && s.artist);
 }
 
+/** How far back a song may have been released and still count as "최신". */
+export const RECENT_MONTHS = 6;
+
+export function isRecencyQuery(query: string): boolean {
+  return /최신|신곡|요즘|최근|요새|newest|latest|new release/i.test(query);
+}
+
+/**
+ * Drop chart songs released more than `months` before `now`.
+ * Songs with an unknown release date are kept — we cannot prove they are old.
+ */
+export function filterRecent(
+  chart: ChartEntry[],
+  now: Date,
+  months = RECENT_MONTHS,
+): ChartEntry[] {
+  const cutoff = new Date(now);
+  cutoff.setMonth(cutoff.getMonth() - months);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  return chart.filter((e) => !e.releasedOn || e.releasedOn >= cutoffStr);
+}
+
 /**
  * Map the ranks the model picked back onto real chart entries.
  * Unknown ranks and duplicates are dropped, so nothing outside the chart
@@ -79,7 +101,12 @@ async function selectFromChart(
   count: number,
   chart: ChartEntry[],
 ): Promise<SongSeed[]> {
-  const list = chart.map((e) => `${e.rank}. ${e.title} — ${e.artist}`).join("\n");
+  const list = chart
+    .map(
+      (e) =>
+        `${e.rank}. ${e.title} — ${e.artist}${e.releasedOn ? ` (발매 ${e.releasedOn.slice(0, 7)})` : ""}`,
+    )
+    .join("\n");
   const prompt = [
     "아래는 지금 이 순간의 멜론 실시간 차트입니다.",
     list,
@@ -119,8 +146,13 @@ export async function generateSongList(
 ): Promise<SongSeed[]> {
   const ai = getClient();
 
-  if (chart && chart.length > 0) {
-    const picked = await selectFromChart(ai, query, count, chart);
+  // "최신" means recently released, not merely still charting — so a
+  // 2024 hit sitting at #80 must not qualify. Enforced in code, not prompt.
+  const candidates =
+    chart && isRecencyQuery(query) ? filterRecent(chart, new Date()) : chart;
+
+  if (candidates && candidates.length > 0) {
+    const picked = await selectFromChart(ai, query, count, candidates);
     if (picked.length > 0) return picked;
   }
 

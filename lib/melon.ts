@@ -42,7 +42,14 @@ export function parseMelonChart(html: string): ChartEntry[] {
 
     const title = anchorTexts(titleBlock)[0];
     const artist = anchorTexts(artistBlock).join(", ");
-    if (title && artist) entries.push({ rank, title, artist });
+    if (!title || !artist) continue;
+
+    // Album art URLs embed an upload timestamp (…/15082293_20261026170443_500.jpg)
+    // that tracks the release date within days. Re-uploads can only make it
+    // later, never earlier, so it is safe for "too old" filtering.
+    const d = row.match(/album\/images\/[^"]*?_(\d{4})(\d{2})(\d{2})\d*_500/);
+    const releasedOn = d ? `${d[1]}-${d[2]}-${d[3]}` : undefined;
+    entries.push(releasedOn ? { rank, title, artist, releasedOn } : { rank, title, artist });
   }
 
   return entries;

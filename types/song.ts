@@ -7,7 +7,11 @@ export type Song = {
 
 export type SongSeed = Pick<Song, "title" | "artist">;
 
-export type ChartEntry = SongSeed & { rank: number };
+export type ChartEntry = SongSeed & {
+  rank: number;
+  /** Approximate release date (YYYY-MM-DD), taken from the album art upload date. */
+  releasedOn?: string;
+};
 
 export type SongStatus =
   | "pending"
