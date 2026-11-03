@@ -4,6 +4,7 @@ import { copyFile, mkdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { convertToMp3 } from "@/lib/converter";
+import { resolveDownloadDir } from "@/lib/downloadDir";
 import {
   createJob,
   getJobStatus as getJobStatusFromStore,
@@ -22,7 +23,14 @@ import { searchTopMatch } from "@/lib/youtube";
 import type { JobStatus, Song, SongJobItem } from "@/types/song";
 
 async function copyToDownloads(srcPath: string, fileName: string): Promise<string> {
-  const dir = path.join(os.homedir(), "Downloads");
+  // Resolved per file, so a long job crossing the day boundary files each
+  // song by when it finished. DOWNLOAD_DIR unset → ~/Downloads.
+  const dir = resolveDownloadDir({
+    template: process.env.DOWNLOAD_DIR,
+    home: os.homedir(),
+    now: new Date(),
+    dayStartHour: Number(process.env.DOWNLOAD_DAY_START_HOUR ?? 0),
+  });
   await mkdir(dir, { recursive: true });
   const dest = path.join(dir, fileName);
   await copyFile(srcPath, dest);

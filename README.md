@@ -55,6 +55,16 @@ ls "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\yt-dlp.FFmpeg_Microsoft.Winget.S
 
 > ⚠️ **Windows path는 반드시 forward slash(`/`)** 로 쓰세요. 일반 backslash(`\`)는 `\x`·`\f`·`\b` 같은 escape 시퀀스로 해석돼 `ffmpeg.exe`가 `ffmpeg.e`로 잘립니다. 큰따옴표+이중 backslash(`"...\\bin\\ffmpeg.exe"`)도 OK.
 
+**저장 폴더 (선택)**: 기본은 `~/Downloads`. 다른 폴더에 바로 저장하려면:
+
+```env
+DOWNLOAD_DIR=C:/매장음악/{date}
+DOWNLOAD_DAY_START_HOUR=6
+```
+
+- `{date}`는 `YYYYMMDD`(예: `20261103`)로 바뀌고, 폴더가 없으면 만듭니다.
+- `DOWNLOAD_DAY_START_HOUR`(0–23, 기본 0): 이 시각 전은 전날로 칩니다. `6`이면 새벽 0:32에 받은 곡도 전날 폴더에 들어갑니다.
+
 **macOS / Linux**: `which yt-dlp && which ffmpeg`로 PATH 확인. 둘 다 경로가 나오면 `YT_DLP_PATH`/`FFMPEG_PATH`는 생략 가능 (코드가 이름만으로 spawn).
 
 ### 4. 실행
