@@ -17,6 +17,35 @@ export type ConvertResult = {
 };
 
 /**
+ * Loudness normalization applied while extracting audio, so songs from
+ * different uploads play back at a similar volume.
+ * - I=-14   integrated loudness target in LUFS (Spotify/YouTube reference)
+ * - TP=-1.5 true-peak ceiling in dBTP, leaves headroom against clipping
+ * - LRA=11  loudness range target in LU
+ * Single-pass: about 1–2 LU of error, but no extra decode per song.
+ */
+export const LOUDNORM_FILTER = "loudnorm=I=-14:TP=-1.5:LRA=11";
+
+export function buildYtDlpArgs(url: string, outTemplate: string, ffmpeg: string): string[] {
+  return [
+    "-x",
+    "--audio-format",
+    "mp3",
+    "--audio-quality",
+    "0",
+    "--no-playlist",
+    "--ffmpeg-location",
+    ffmpeg,
+    // Hand the filter to the ffmpeg run that ExtractAudio performs (output side).
+    "--postprocessor-args",
+    `ExtractAudio+ffmpeg_o:-af ${LOUDNORM_FILTER}`,
+    "-o",
+    outTemplate,
+    url,
+  ];
+}
+
+/**
  * Downloads a YouTube URL as an mp3 file. yt-dlp handles both download
  * and the ffmpeg-backed audio extraction in a single call when given
  * `-x --audio-format mp3` (yt-dlp invokes ffmpeg internally).
@@ -30,19 +59,7 @@ export async function convertToMp3(
   const outTemplate = path.join(jobDir, "%(title)s.%(ext)s");
 
   return new Promise((resolve, reject) => {
-    const args = [
-      "-x",
-      "--audio-format",
-      "mp3",
-      "--audio-quality",
-      "0",
-      "--no-playlist",
-      "--ffmpeg-location",
-      FFMPEG,
-      "-o",
-      outTemplate,
-      url,
-    ];
+    const args = buildYtDlpArgs(url, outTemplate, FFMPEG);
 
     const child = spawn(YT_DLP, args, { windowsHide: true });
     let printed = "";
