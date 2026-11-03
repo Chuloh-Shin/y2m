@@ -12,6 +12,7 @@ import {
   updateItem,
 } from "@/lib/jobs";
 import { generateSongList as generateSongListFromLlm } from "@/lib/llm";
+import { fetchMelonChart } from "@/lib/melon";
 import { searchTopMatch } from "@/lib/youtube";
 import type { JobStatus, Song, SongJobItem } from "@/types/song";
 
@@ -144,8 +145,12 @@ export async function generateSongList(
   if (!trimmed) return { ok: false, reason: "invalid-input" };
   const n = Math.max(1, Math.min(50, Math.floor(count)));
 
+  // Chart is best-effort: if Melon is down or its markup changed,
+  // the LLM falls back to search-grounded recommendation.
+  const chart = await fetchMelonChart().catch(() => undefined);
+
   try {
-    const seeds = await generateSongListFromLlm(trimmed, n);
+    const seeds = await generateSongListFromLlm(trimmed, n, chart);
     const songs: Song[] = await Promise.all(
       seeds.map(async (seed) => {
         const match = await searchTopMatch(`${seed.artist} ${seed.title}`).catch(

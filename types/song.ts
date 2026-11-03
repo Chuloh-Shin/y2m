@@ -7,6 +7,8 @@ export type Song = {
 
 export type SongSeed = Pick<Song, "title" | "artist">;
 
+export type ChartEntry = SongSeed & { rank: number };
+
 export type SongStatus =
   | "pending"
   | "searching"

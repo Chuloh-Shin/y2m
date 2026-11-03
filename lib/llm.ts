@@ -1,5 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
-import type { SongSeed } from "@/types/song";
+import { GoogleGenAI, Type } from "@google/genai";
+import type { ChartEntry, SongSeed } from "@/types/song";
 
 const MODEL = "gemini-2.5-flash";
 
@@ -49,11 +49,89 @@ export function parseSongSeeds(text: string): SongSeed[] {
     .filter((s) => s.title && s.artist);
 }
 
+/**
+ * Map the ranks the model picked back onto real chart entries.
+ * Unknown ranks and duplicates are dropped, so nothing outside the chart
+ * can ever reach the user.
+ */
+export function pickChartEntries(
+  ranks: unknown,
+  chart: ChartEntry[],
+  count: number,
+): SongSeed[] {
+  if (!Array.isArray(ranks)) return [];
+  const byRank = new Map(chart.map((e) => [e.rank, e]));
+  const seen = new Set<number>();
+  const picked: SongSeed[] = [];
+  for (const r of ranks) {
+    const entry = typeof r === "number" ? byRank.get(r) : undefined;
+    if (!entry || seen.has(entry.rank)) continue;
+    seen.add(entry.rank);
+    picked.push({ title: entry.title, artist: entry.artist });
+    if (picked.length === count) break;
+  }
+  return picked;
+}
+
+async function selectFromChart(
+  ai: GoogleGenAI,
+  query: string,
+  count: number,
+  chart: ChartEntry[],
+): Promise<SongSeed[]> {
+  const list = chart.map((e) => `${e.rank}. ${e.title} — ${e.artist}`).join("\n");
+  const prompt = [
+    "아래는 지금 이 순간의 멜론 실시간 차트입니다.",
+    list,
+    "",
+    `사용자 취향: "${query}"`,
+    `위 차트에서 취향에 맞는 곡을 최대 ${count}개 골라, 잘 맞는 순서대로 순위 번호(rank) 배열로만 답하세요.`,
+    "장르·분위기·대상(연령/성별 등) 조건을 지키고, 맞지 않는 곡은 개수를 채우려고 억지로 넣지 마세요.",
+    "차트에 취향과 맞는 곡이 하나도 없으면 빈 배열 []을 반환하세요.",
+  ].join("\n");
+
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+    },
+  });
+
+  const text = response.text;
+  if (!text) return [];
+  return pickChartEntries(JSON.parse(text), chart, count);
+}
+
+/**
+ * Recommend songs for a taste query.
+ *
+ * With a chart: the model only chooses from the current chart (hybrid mode),
+ * which keeps results current and hallucination-free. If the chart has
+ * nothing matching the taste (e.g. "2000년대 힙합"), or no chart is given,
+ * fall back to Google-Search-grounded free recommendation.
+ */
 export async function generateSongList(
   query: string,
   count: number,
+  chart?: ChartEntry[],
 ): Promise<SongSeed[]> {
   const ai = getClient();
+
+  if (chart && chart.length > 0) {
+    const picked = await selectFromChart(ai, query, count, chart);
+    if (picked.length > 0) return picked;
+  }
+
+  return recommendWithSearch(ai, query, count);
+}
+
+async function recommendWithSearch(
+  ai: GoogleGenAI,
+  query: string,
+  count: number,
+): Promise<SongSeed[]> {
   const today = new Date().toISOString().slice(0, 10);
 
   const prompt = [
